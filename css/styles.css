@@ -727,6 +727,56 @@ textarea.form-control { resize: vertical; min-height: 80px; }
 /* ============================================================
    SCROLL BARS
    ============================================================ */
+/* ============================================================
+   GRID LAYOUT
+   ============================================================ */
+.grid { display: grid; }
+.cols-2 { grid-template-columns: repeat(2, 1fr); }
+.gap-4 { gap: 1rem; }
+
+/* ============================================================
+   EXPAND DETAIL PANEL (inside tables)
+   ============================================================ */
+.expand-detail-panel {
+    padding: 1.25rem 1.5rem;
+    background: var(--primary-soft);
+    animation: slideDown 0.2s ease;
+}
+.expand-detail-title {
+    font-weight: 700;
+    font-size: 0.85rem;
+    color: var(--primary);
+    margin-bottom: 0.75rem;
+}
+.detail-row td { padding: 0 !important; }
+
+/* ============================================================
+   BUTTON INFO
+   ============================================================ */
+.btn-info { background: var(--info); color: white; border-color: var(--info); }
+.btn-info:hover:not(:disabled) { background: #0284c7; }
+
+/* ============================================================
+   TEXT COLOR UTILITIES
+   ============================================================ */
+.text-success { color: var(--success) !important; }
+.text-danger  { color: var(--danger) !important; }
+.text-warning { color: var(--warning) !important; }
+.text-info    { color: var(--info) !important; }
+.text-muted   { color: var(--text-muted) !important; }
+.font-bold    { font-weight: 700 !important; }
+
+/* ============================================================
+   MISC UTILITIES
+   ============================================================ */
+.py-6  { padding-top: 1.5rem; padding-bottom: 1.5rem; }
+.container { max-width: 1200px; margin: 0 auto; }
+.no-border { border: none !important; }
+:root { --bg-alt: #f1f5f9; }
+
+/* ============================================================
+   SCROLL BARS
+   ============================================================ */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 99px; }
