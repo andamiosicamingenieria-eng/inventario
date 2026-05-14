@@ -1,0 +1,1046 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f5f6fa;
+    --surface: #ffffff;
+    --surface2: #f0f2f7;
+    --border: #d1d5e0;
+    --border-focus: #2563eb;
+    --accent: #2563eb;
+    --accent2: #059669;
+    --danger: #dc2626;
+    --text: #111827;
+    --text-muted: #6b7280;
+    --text-dim: #374151;
+    --mono: 'DM Mono', monospace;
+    --sans: 'DM Sans', sans-serif;
+  }
+
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    font-size: 13px;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* ── HEADER ── */
+  .header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+  }
+  .header-left { display: flex; align-items: center; gap: 12px; }
+  .brand { font-family: var(--mono); font-size: 11px; color: var(--accent); letter-spacing: 0.1em; text-transform: uppercase; }
+  .folio-badge {
+    font-family: var(--mono);
+    font-size: 18px;
+    font-weight: 500;
+    color: var(--text);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    padding: 4px 12px;
+    border-radius: 6px;
+  }
+  .folio-badge span { color: var(--accent); }
+
+  /* ── TABS ── */
+  .tabs {
+    display: flex;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 20px;
+    gap: 2px;
+    flex-shrink: 0;
+  }
+  .tab {
+    padding: 8px 16px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-muted);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .tab:hover { color: var(--text-dim); }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  /* ── CONTENT ── */
+  .content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+  }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* ── GRID DE CAMPOS ── */
+  .grid { display: grid; gap: 14px; }
+  .grid-2 { grid-template-columns: 1fr 1fr; }
+  .grid-3 { grid-template-columns: 1fr 1fr 1fr; }
+  .grid-4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
+  .span-2 { grid-column: span 2; }
+  .span-3 { grid-column: span 3; }
+  .span-4 { grid-column: span 4; }
+
+  .section-title {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--text-muted);
+    margin-bottom: 12px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border);
+  }
+  .section { margin-bottom: 24px; }
+
+  /* ── CAMPOS ── */
+  .field { display: flex; flex-direction: column; gap: 4px; }
+  .field label {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .field label .req { color: var(--accent); margin-left: 2px; }
+
+  input, select, textarea {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 13px;
+    padding: 7px 10px;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    width: 100%;
+    outline: none;
+  }
+  input:focus, select:focus, textarea:focus {
+    border-color: var(--border-focus);
+    box-shadow: 0 0 0 3px rgba(79,142,247,0.12);
+  }
+  input[readonly] {
+    color: var(--text-muted);
+    cursor: default;
+    background: var(--surface);
+  }
+  input.calculated {
+    color: var(--accent2);
+    font-family: var(--mono);
+    font-size: 12px;
+  }
+  select option { background: var(--surface2); }
+  textarea { resize: vertical; min-height: 60px; }
+
+  /* Autocomplete cliente */
+  .autocomplete-wrap { position: relative; }
+  .autocomplete-list {
+    position: absolute;
+    top: 100%;
+    left: 0; right: 0;
+    background: var(--surface2);
+    border: 1px solid var(--border-focus);
+    border-top: none;
+    border-radius: 0 0 6px 6px;
+    z-index: 100;
+    max-height: 180px;
+    overflow-y: auto;
+    display: none;
+  }
+  .autocomplete-list.open { display: block; }
+  .autocomplete-item {
+    padding: 8px 10px;
+    cursor: pointer;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.1s;
+  }
+  .autocomplete-item:hover { background: var(--surface); }
+  .autocomplete-item .name { font-weight: 500; font-size: 13px; }
+  .autocomplete-item .sub { font-size: 11px; color: var(--text-muted); margin-top: 1px; }
+
+  /* ── CARRITO DE SKUS ── */
+  .cart-header {
+    display: grid;
+    grid-template-columns: 160px 1fr 70px 80px 80px 90px 90px 32px;
+    gap: 6px;
+    padding: 0 0 6px 0;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 8px;
+  }
+  .cart-header span {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+  }
+  .cart-row {
+    display: grid;
+    grid-template-columns: 160px 1fr 70px 80px 80px 90px 90px 32px;
+    gap: 6px;
+    margin-bottom: 6px;
+    align-items: center;
+  }
+  .cart-row input, .cart-row select { font-size: 12px; padding: 6px 8px; }
+  .btn-remove {
+    width: 28px; height: 28px;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--danger);
+    cursor: pointer;
+    font-size: 14px;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.15s;
+    flex-shrink: 0;
+  }
+  .btn-remove:hover { background: rgba(240,101,149,0.12); }
+
+  .btn-add-sku {
+    margin-top: 8px;
+    background: transparent;
+    border: 1px dashed var(--border);
+    border-radius: 6px;
+    color: var(--text-muted);
+    padding: 7px 14px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: var(--sans);
+  }
+  .btn-add-sku:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* Totales del carrito */
+  .cart-totals {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin-top: 16px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+  }
+  .total-box {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+  }
+  .total-box .label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin-bottom: 4px; }
+  .total-box .value { font-family: var(--mono); font-size: 15px; font-weight: 500; color: var(--accent2); }
+
+  /* ── FOOTER ── */
+  .footer {
+    border-top: 1px solid var(--border);
+    padding: 12px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--surface);
+    flex-shrink: 0;
+  }
+  .footer-info { font-size: 11px; color: var(--text-muted); }
+  .footer-info span { color: var(--accent2); font-family: var(--mono); }
+  .btn-group { display: flex; gap: 8px; }
+
+  .btn {
+    padding: 8px 18px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    font-family: var(--sans);
+    cursor: pointer;
+    border: none;
+    transition: all 0.15s;
+  }
+  .btn-ghost {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+  }
+  .btn-ghost:hover { border-color: var(--text-muted); color: var(--text); }
+  .btn-primary {
+    background: var(--accent);
+    color: white;
+  }
+  .btn-primary:hover { background: #3a7de0; }
+  .btn-primary:disabled { background: var(--border); color: var(--text-muted); cursor: not-allowed; }
+
+  /* ── ESTADO / TOAST ── */
+  .toast {
+    position: fixed;
+    bottom: 70px; left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 18px;
+    font-size: 13px;
+    opacity: 0;
+    transition: all 0.25s;
+    pointer-events: none;
+    z-index: 999;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .toast.success { border-color: var(--accent2); color: var(--accent2); }
+  .toast.error { border-color: var(--danger); color: var(--danger); }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #c1c5d0; border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-left">
+    <div class="brand">ICAM 360</div>
+    <div class="folio-badge">Contrato <span id="folio-display">#···</span></div>
+  </div>
+  <div style="font-size:11px;color:var(--text-muted);">Torres · <span id="fecha-hoy"></span></div>
+</div>
+
+<!-- TABS -->
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('cliente')">① Cliente</div>
+  <div class="tab" onclick="switchTab('obra')">② Obra y Entrega</div>
+  <div class="tab" onclick="switchTab('condiciones')">③ Condiciones</div>
+  <div class="tab" onclick="switchTab('skus')">④ Equipo <span id="tab-skus-badge" style="font-size:10px;color:var(--accent2);"></span></div>
+  <div class="tab" onclick="switchTab('financiero')">⑤ Financiero</div>
+  <div class="tab" onclick="switchTab('pagare')">⑥ Pagaré</div>
+</div>
+
+<!-- CONTENT -->
+<div class="content">
+
+  <!-- TAB 1: CLIENTE -->
+  <div class="tab-panel active" id="panel-cliente">
+    <div class="section">
+      <div class="section-title">Identificación del contrato</div>
+      <div class="grid grid-3">
+        <div class="field">
+          <label>Folio contrato</label>
+          <input type="text" id="folio_c" readonly>
+        </div>
+        <div class="field">
+          <label>Renta anterior</label>
+          <input type="text" id="renta_anterior" placeholder="Folio previo o A/B para fusión">
+        </div>
+        <div class="field">
+          <label>Renta posterior</label>
+          <input type="text" id="renta_posterior" placeholder="Folio siguiente (si ya se conoce)">
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Datos del cliente</div>
+      <div class="grid grid-2">
+        <div class="field span-2">
+          <label>Razón social <span class="req">*</span></label>
+          <div class="autocomplete-wrap">
+            <input type="text" id="razon_social" placeholder="Escribe para buscar..." autocomplete="off" oninput="filtrarClientes(this.value)">
+            <div class="autocomplete-list" id="cliente-list"></div>
+          </div>
+        </div>
+        <input type="hidden" id="cliente_id">
+        <div class="field">
+          <label>RFC</label>
+          <input type="text" id="rfc" readonly placeholder="Autocompleta al elegir cliente">
+        </div>
+        <div class="field">
+          <label>Teléfono oficina</label>
+          <input type="text" id="tel_oficina" readonly>
+        </div>
+        <div class="field">
+          <label>Teléfono móvil</label>
+          <input type="text" id="tel_movil" readonly>
+        </div>
+        <div class="field">
+          <label>Email</label>
+          <input type="text" id="email" readonly>
+        </div>
+        <div class="field span-2">
+          <label>Dirección fiscal</label>
+          <input type="text" id="direccion_cliente" readonly>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 2: OBRA -->
+  <div class="tab-panel" id="panel-obra">
+    <div class="section">
+      <div class="section-title">Datos de la obra</div>
+      <div class="grid grid-2">
+        <div class="field span-2">
+          <label>Nombre de la obra</label>
+          <input type="text" id="obra" placeholder="Descripción o nombre de la obra">
+        </div>
+        <div class="field span-2">
+          <label>Dirección del proyecto</label>
+          <input type="text" id="direccion_proyecto" placeholder="Calle, número, colonia">
+        </div>
+        <div class="field">
+          <label>Ciudad / Municipio</label>
+          <input type="text" id="ubicacion_entrega" placeholder="Toluca, Metepec, etc.">
+        </div>
+        <div class="field">
+          <label>Medio de contacto</label>
+          <select id="medio_contacto">
+            <option value="">— Seleccionar —</option>
+            <option>Google</option>
+            <option>Facebook</option>
+            <option>Instagram</option>
+            <option>Redes Sociales</option>
+            <option>Cliente Antiguo</option>
+            <option>Referenciado</option>
+            <option>Otro</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Recepción en obra</div>
+      <div class="grid grid-2">
+        <div class="field">
+          <label>Quien recibe</label>
+          <input type="text" id="quien_recibe" placeholder="Nombre del responsable en obra">
+        </div>
+        <div class="field">
+          <label>Móvil quien recibe</label>
+          <input type="text" id="movil_recibe" placeholder="Número de contacto en obra">
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Flete</div>
+      <div class="grid grid-4">
+        <div class="field">
+          <label>Requiere flete</label>
+          <select id="requiere_flete" onchange="toggleFlete(this.value)">
+            <option value="NO">NO</option>
+            <option value="SI">SÍ</option>
+          </select>
+        </div>
+        <div class="field" id="campo-flete-cargo">
+          <label>A cargo de</label>
+          <select id="flete_a_cargo_de">
+            <option value="">— Seleccionar —</option>
+            <option>ICAM</option>
+            <option>FLETERA</option>
+            <option>CLIENTE</option>
+          </select>
+        </div>
+        <div class="field" id="campo-distancia">
+          <label>Distancia (km)</label>
+          <input type="number" id="distancia_km" placeholder="0">
+        </div>
+        <div class="field" id="campo-costo-flete">
+          <label>Costo flete ($)</label>
+          <input type="number" id="costo_flete" placeholder="0.00" step="0.01">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 3: CONDICIONES -->
+  <div class="tab-panel" id="panel-condiciones">
+    <div class="section">
+      <div class="section-title">Condiciones de renta</div>
+      <div class="grid grid-4">
+        <div class="field">
+          <label>Tipo de operación</label>
+          <select id="tipo_operacion" onchange="onTipoChange()">
+            <option value="RENTA">Renta</option>
+            <option value="VENTA">Venta</option>
+            <option value="VENTA PERDIDA">Venta por Pérdida 🔴</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Días de renta <span class="req">*</span></label>
+          <input type="number" id="dias_renta" placeholder="7, 15, 30..." oninput="calcularFechaVencimiento()">
+        </div>
+        <div class="field">
+          <label>Fecha contrato</label>
+          <input type="date" id="fecha_contrato">
+        </div>
+        <div class="field">
+          <label>Fecha solicitada entrega</label>
+          <input type="date" id="fecha_solicitada" onchange="calcularFechaVencimiento()">
+        </div>
+        <div class="field span-2">
+          <label>Fecha vencimiento estimada</label>
+          <input type="text" id="fecha_vencimiento_estimada" readonly class="calculated" placeholder="fecha_solicitada + días">
+        </div>
+        <div class="field">
+          <label>Agente</label>
+          <input type="text" id="agente" placeholder="Nombre del agente">
+        </div>
+        <div class="field">
+          <label>Forma de pago</label>
+          <select id="forma_pago">
+            <option value="">— Seleccionar —</option>
+            <option>Transferencia</option>
+            <option>Cheque</option>
+            <option>Efectivo</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Fecha de pago</label>
+          <input type="date" id="fecha_pago">
+        </div>
+        <div class="field">
+          <label>Factura</label>
+          <input type="text" id="factura" placeholder="Número de factura">
+        </div>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-title">Notas</div>
+      <div class="grid">
+        <div class="field">
+          <textarea id="notas" placeholder="Observaciones o condiciones especiales del contrato..."></textarea>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 4: EQUIPO / SKUs -->
+  <div class="tab-panel" id="panel-skus">
+    <div class="section">
+      <div class="section-title">Despiece de equipo</div>
+
+      <div class="cart-header">
+        <span>SKU</span>
+        <span>Descripción</span>
+        <span>Cantidad</span>
+        <span>Peso U. (kg)</span>
+        <span>Peso T. (kg)</span>
+        <span>Tarifa/día ($)</span>
+        <span>Subtotal/día ($)</span>
+        <span></span>
+      </div>
+
+      <div id="cart-rows"></div>
+
+      <button class="btn-add-sku" onclick="agregarFilaSku()">+ Agregar línea</button>
+
+      <div class="cart-totals">
+        <div class="total-box">
+          <div class="label">Total piezas</div>
+          <div class="value" id="total-piezas">0</div>
+        </div>
+        <div class="total-box">
+          <div class="label">Peso total (kg)</div>
+          <div class="value" id="total-peso">0.00</div>
+        </div>
+        <div class="total-box">
+          <div class="label">Renta diaria</div>
+          <div class="value" id="total-renta-diaria">$0.00</div>
+        </div>
+        <div class="total-box">
+          <div class="label">Renta estimada total</div>
+          <div class="value" id="total-renta-estimada">$0.00</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 5: FINANCIERO -->
+  <div class="tab-panel" id="panel-financiero">
+    <div class="section">
+      <div class="section-title">Resumen financiero</div>
+      <div class="grid grid-3">
+        <div class="field">
+          <label>Subtotal renta</label>
+          <input type="number" id="subtotal" placeholder="0.00" step="0.01" oninput="calcularTotales()">
+        </div>
+        <div class="field">
+          <label>Costo entrega / instalación</label>
+          <input type="number" id="costo_entrega" placeholder="0.00" step="0.01" oninput="calcularTotales()">
+        </div>
+        <div class="field">
+          <label>Costo recolección</label>
+          <input type="number" id="costo_recoleccion" placeholder="0.00" step="0.01" oninput="calcularTotales()">
+        </div>
+        <div class="field">
+          <label>Costo armado</label>
+          <input type="number" id="costo_armado" placeholder="0.00" step="0.01" oninput="calcularTotales()">
+        </div>
+        <div class="field">
+          <label>Costo desarmado</label>
+          <input type="number" id="costo_desarmado" placeholder="0.00" step="0.01" oninput="calcularTotales()">
+        </div>
+        <div class="field">
+          <label>Otros cargos</label>
+          <input type="number" id="otros_cargos" placeholder="0.00" step="0.01" oninput="calcularTotales()">
+        </div>
+        <div class="field">
+          <label>IVA (16%)</label>
+          <input type="text" id="iva" readonly class="calculated">
+        </div>
+        <div class="field">
+          <label>Anticipo recibido</label>
+          <input type="number" id="anticipo" placeholder="0.00" step="0.01">
+        </div>
+        <div class="field">
+          <label>TOTAL</label>
+          <input type="text" id="importe" readonly class="calculated" style="font-size:15px;font-weight:600;">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 6: PAGARÉ -->
+  <div class="tab-panel" id="panel-pagare">
+    <div class="section">
+      <div class="section-title">Datos del pagaré</div>
+      <div class="grid grid-2">
+        <div class="field">
+          <label>Número de pagaré</label>
+          <input type="text" id="pagare_numero" value="1/1" readonly class="calculated">
+        </div>
+        <div class="field">
+          <label>Monto del pagaré ($)</label>
+          <input type="number" id="pagare_monto" placeholder="Igual al total del contrato" step="0.01">
+        </div>
+        <div class="field">
+          <label>Lugar de expedición</label>
+          <input type="text" id="pagare_lugar" value="Toluca, Estado de México">
+        </div>
+        <div class="field">
+          <label>Fecha de expedición</label>
+          <input type="date" id="pagare_fecha">
+        </div>
+      </div>
+    </div>
+    <div class="section" style="margin-top:16px;">
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:16px;font-size:12px;color:var(--text-muted);line-height:1.7;">
+        <strong style="color:var(--text-dim);">Resumen del contrato</strong><br>
+        Cliente: <span id="sum-cliente" style="color:var(--text)">—</span><br>
+        Obra: <span id="sum-obra" style="color:var(--text)">—</span><br>
+        Días de renta: <span id="sum-dias" style="color:var(--accent)">—</span> &nbsp;|&nbsp;
+        Vencimiento estimado: <span id="sum-vence" style="color:var(--accent)">—</span><br>
+        Equipo: <span id="sum-piezas" style="color:var(--text)">—</span> piezas &nbsp;/&nbsp; <span id="sum-peso" style="color:var(--text)">—</span> kg<br>
+        <strong style="color:var(--accent2);">Total: <span id="sum-total">—</span></strong>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- FOOTER -->
+<div class="footer">
+  <div class="footer-info">
+    Folio raíz: <span id="footer-raiz">—</span> &nbsp;·&nbsp;
+    Items: <span id="footer-items">0</span> &nbsp;·&nbsp;
+    Renta diaria: <span id="footer-renta-diaria">$0</span>
+  </div>
+  <div class="btn-group">
+    <button class="btn btn-ghost" onclick="limpiarPanel()">Cancelar</button>
+    <button class="btn btn-primary" id="btn-guardar" onclick="guardar()">Guardar contrato</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── ESTADO ────────────────────────────────────────────────────
+let CLIENTES  = [];
+let PRODUCTOS = [];
+let itemCount = 0;
+
+// ── INIT ──────────────────────────────────────────────────────
+window.onload = () => {
+  // Fecha de hoy
+  const hoy = new Date();
+  document.getElementById('fecha-hoy').textContent =
+    hoy.toLocaleDateString('es-MX', {day:'2-digit', month:'short', year:'numeric'});
+  document.getElementById('fecha_contrato').value  = fmtDate(hoy);
+  document.getElementById('pagare_fecha').value    = fmtDate(hoy);
+
+  // Cargar folio y catálogos
+  google.script.run.withSuccessHandler(f => {
+    document.getElementById('folio_c').value = f;
+    document.getElementById('folio-display').textContent = f;
+  }).getSiguienteFolio();
+
+  google.script.run.withSuccessHandler(lista => {
+    CLIENTES = lista;
+  }).getClientes();
+
+  google.script.run.withSuccessHandler(lista => {
+    PRODUCTOS = lista;
+    agregarFilaSku(); // línea inicial vacía
+  }).getProductos();
+
+  // Campos de flete deshabilitados por defecto
+  toggleFlete('NO');
+
+  // ── Listeners del autocomplete (dentro de onload para garantizar DOM listo) ──
+  document.getElementById('cliente-list').addEventListener('mousedown', function(e) {
+    _ignorarBlur = true;
+    var item = e.target.closest('.autocomplete-item');
+    if (!item) return;
+    e.preventDefault();
+    var idx = parseInt(item.getAttribute('data-idx'), 10);
+    var c   = _hitsClientes[idx];
+    if (!c) return;
+    document.getElementById('cliente_id').value        = c.id;
+    document.getElementById('razon_social').value      = c.razon_social;
+    document.getElementById('rfc').value               = c.rfc        || '';
+    document.getElementById('tel_oficina').value       = c.tel_oficina|| '';
+    document.getElementById('tel_movil').value         = c.tel_movil  || '';
+    document.getElementById('email').value             = c.email      || '';
+    document.getElementById('direccion_cliente').value = c.direccion  || '';
+    document.getElementById('cliente-list').classList.remove('open');
+    _ignorarBlur = false;
+  });
+
+  document.getElementById('razon_social').addEventListener('blur', function() {
+    if (_ignorarBlur) return;
+    setTimeout(function() {
+      document.getElementById('cliente-list').classList.remove('open');
+    }, 150);
+  });
+
+  document.addEventListener('click', function(e) {
+    if (!e.target.closest('.autocomplete-wrap'))
+      document.getElementById('cliente-list').classList.remove('open');
+  });
+
+};
+
+// ── TABS ──────────────────────────────────────────────────────
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach((t,i) => {
+    const ids = ['cliente','obra','condiciones','skus','financiero','pagare'];
+    t.classList.toggle('active', ids[i] === tab);
+  });
+  document.querySelectorAll('.tab-panel').forEach(p => {
+    p.classList.toggle('active', p.id === 'panel-' + tab);
+  });
+  if (tab === 'pagare') actualizarResumen();
+}
+
+// ── AUTOCOMPLETE CLIENTE ──────────────────────────────────────
+// Guardamos los hits actuales en variable global para acceder por índice
+var _hitsClientes = [];
+var _ignorarBlur  = false;
+
+function filtrarClientes(q) {
+  var list = document.getElementById('cliente-list');
+  if (!q || q.length < 2) { list.classList.remove('open'); return; }
+  _hitsClientes = CLIENTES.filter(function(c) {
+    return c.razon_social.toLowerCase().indexOf(q.toLowerCase()) !== -1;
+  }).slice(0, 8);
+  var html = '';
+  for (var i = 0; i < _hitsClientes.length; i++) {
+    var c = _hitsClientes[i];
+    html += '<div class="autocomplete-item" data-idx="' + i + '">' +
+      '<div class="name">' + c.razon_social + '</div>' +
+      '<div class="sub">' + (c.rfc || '') + (c.tel_movil ? ' &middot; ' + c.tel_movil : '') + '</div>' +
+      '</div>';
+  }
+  list.innerHTML = html;
+  list.classList.toggle('open', _hitsClientes.length > 0);
+}
+
+
+
+// ── CARRITO DE SKUs ───────────────────────────────────────────
+function buildSkuSelect() {
+  const opts = PRODUCTOS.map(p =>
+    `<option value="${p.sku}" data-desc="${p.descripcion}" data-peso="${p.peso_unitario_kg}" data-tarifa="${p.tarifa_dia}">${p.sku} — ${p.descripcion}</option>`
+  ).join('');
+  return `<option value="">— SKU —</option>` + opts;
+}
+
+function agregarFilaSku() {
+  itemCount++;
+  const n   = itemCount;
+  const div = document.createElement('div');
+  div.className = 'cart-row';
+  div.id = 'row-' + n;
+  div.innerHTML = `
+    <select id="sku-${n}" onchange="onSkuChange(${n})">
+      ${buildSkuSelect()}
+    </select>
+    <input type="text"   id="desc-${n}"     readonly placeholder="—">
+    <input type="number" id="qty-${n}"      placeholder="0" min="0" step="1" oninput="calcularFila(${n})">
+    <input type="number" id="peso-u-${n}"   readonly class="calculated" placeholder="0">
+    <input type="number" id="peso-t-${n}"   readonly class="calculated" placeholder="0">
+    <input type="number" id="tarifa-${n}"   placeholder="0.00" step="0.01" oninput="calcularFila(${n})">
+    <input type="number" id="sub-dia-${n}"  readonly class="calculated" placeholder="0.00">
+    <button class="btn-remove" onclick="eliminarFila(${n})">×</button>
+  `;
+  document.getElementById('cart-rows').appendChild(div);
+  actualizarTotalesCarrito();
+  actualizarBadgeTab();
+}
+
+function onSkuChange(n) {
+  const sel     = document.getElementById('sku-'+n);
+  const opt     = sel.options[sel.selectedIndex];
+  const desc    = opt.dataset.desc  || '';
+  const pesoU   = parseFloat(opt.dataset.peso)   || 0;
+  const tarifa  = parseFloat(opt.dataset.tarifa) || 0;
+  document.getElementById('desc-'+n).value    = desc;
+  document.getElementById('peso-u-'+n).value  = pesoU;
+  document.getElementById('tarifa-'+n).value  = tarifa;
+  calcularFila(n);
+}
+
+function calcularFila(n) {
+  const qty    = parseFloat(document.getElementById('qty-'+n).value)    || 0;
+  const pesoU  = parseFloat(document.getElementById('peso-u-'+n).value) || 0;
+  const tarifa = parseFloat(document.getElementById('tarifa-'+n).value) || 0;
+  document.getElementById('peso-t-'+n).value  = (qty * pesoU).toFixed(2);
+  document.getElementById('sub-dia-'+n).value = (qty * tarifa).toFixed(2);
+  actualizarTotalesCarrito();
+  actualizarBadgeTab();
+}
+
+function eliminarFila(n) {
+  document.getElementById('row-'+n)?.remove();
+  actualizarTotalesCarrito();
+  actualizarBadgeTab();
+}
+
+function actualizarTotalesCarrito() {
+  let piezas = 0, peso = 0, rentaDiaria = 0;
+  document.querySelectorAll('.cart-row').forEach(row => {
+    const n = row.id.replace('row-','');
+    piezas      += parseFloat(document.getElementById('qty-'+n)?.value)     || 0;
+    peso        += parseFloat(document.getElementById('peso-t-'+n)?.value)  || 0;
+    rentaDiaria += parseFloat(document.getElementById('sub-dia-'+n)?.value) || 0;
+  });
+  const dias = parseFloat(document.getElementById('dias_renta')?.value) || 0;
+  document.getElementById('total-piezas').textContent        = piezas;
+  document.getElementById('total-peso').textContent          = peso.toFixed(2);
+  document.getElementById('total-renta-diaria').textContent  = '$' + rentaDiaria.toFixed(2);
+  document.getElementById('total-renta-estimada').textContent= '$' + (rentaDiaria * dias).toFixed(2);
+  // Footer
+  document.getElementById('footer-items').textContent       = piezas;
+  document.getElementById('footer-renta-diaria').textContent= '$' + rentaDiaria.toFixed(2);
+}
+
+function actualizarBadgeTab() {
+  const n = document.querySelectorAll('.cart-row').length;
+  document.getElementById('tab-skus-badge').textContent = n > 0 ? `(${n})` : '';
+}
+
+// ── FECHAS Y CÁLCULOS ─────────────────────────────────────────
+function calcularFechaVencimiento() {
+  const sol  = document.getElementById('fecha_solicitada').value;
+  const dias = parseInt(document.getElementById('dias_renta').value) || 0;
+  if (sol && dias) {
+    const d = new Date(sol + 'T12:00:00');
+    d.setDate(d.getDate() + dias);
+    document.getElementById('fecha_vencimiento_estimada').value = fmtDate(d);
+  } else {
+    document.getElementById('fecha_vencimiento_estimada').value = '';
+  }
+  actualizarTotalesCarrito();
+}
+
+function calcularTotales() {
+  const subtotal   = parseFloat(document.getElementById('subtotal').value)         || 0;
+  const entrega    = parseFloat(document.getElementById('costo_entrega').value)    || 0;
+  const recoleccion= parseFloat(document.getElementById('costo_recoleccion').value)|| 0;
+  const armado     = parseFloat(document.getElementById('costo_armado').value)     || 0;
+  const desarmado  = parseFloat(document.getElementById('costo_desarmado').value)  || 0;
+  const otros      = parseFloat(document.getElementById('otros_cargos').value)     || 0;
+  const base  = subtotal + entrega + recoleccion + armado + desarmado + otros;
+  const iva   = base * 0.16;
+  const total = base + iva;
+  document.getElementById('iva').value    = '$' + iva.toFixed(2);
+  document.getElementById('importe').value= '$' + total.toFixed(2);
+  // Prellenar pagaré
+  document.getElementById('pagare_monto').value = total.toFixed(2);
+}
+
+function toggleFlete(val) {
+  const ocultar = val !== 'SI';
+  ['campo-flete-cargo','campo-distancia','campo-costo-flete'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.opacity = ocultar ? '0.35' : '1';
+  });
+}
+
+// ── RESUMEN (tab pagaré) ──────────────────────────────────────
+function actualizarResumen() {
+  document.getElementById('sum-cliente').textContent = document.getElementById('razon_social').value || '—';
+  document.getElementById('sum-obra').textContent    = document.getElementById('obra').value || '—';
+  document.getElementById('sum-dias').textContent    = document.getElementById('dias_renta').value || '—';
+  document.getElementById('sum-vence').textContent   = document.getElementById('fecha_vencimiento_estimada').value || '—';
+  document.getElementById('sum-piezas').textContent  = document.getElementById('total-piezas').textContent;
+  document.getElementById('sum-peso').textContent    = document.getElementById('total-peso').textContent;
+  document.getElementById('sum-total').textContent   = document.getElementById('importe').value || '—';
+
+  // Folio raíz en footer
+  const ant = document.getElementById('renta_anterior').value.trim();
+  document.getElementById('footer-raiz').textContent = ant ? ant.split('/')[0] : document.getElementById('folio_c').value;
+}
+
+// ── GUARDAR ───────────────────────────────────────────────────
+function guardar() {
+  if (!document.getElementById('razon_social').value) {
+    showToast('Selecciona un cliente antes de guardar', 'error');
+    switchTab('cliente');
+    return;
+  }
+
+  const rows = document.querySelectorAll('.cart-row');
+  if (rows.length === 0) {
+    showToast('Agrega al menos un SKU al contrato', 'error');
+    switchTab('skus');
+    return;
+  }
+
+  const items = [];
+  rows.forEach(row => {
+    const n = row.id.replace('row-','');
+    const sku = document.getElementById('sku-'+n)?.value;
+    if (!sku) return;
+    items.push({
+      sku             : sku,
+      descripcion     : document.getElementById('desc-'+n)?.value || '',
+      cantidad        : parseFloat(document.getElementById('qty-'+n)?.value) || 0,
+      unidad_medida   : 'PZA',
+      peso_unitario_kg: parseFloat(document.getElementById('peso-u-'+n)?.value) || '',
+      peso_total_kg   : parseFloat(document.getElementById('peso-t-'+n)?.value) || '',
+      tarifa_dia      : parseFloat(document.getElementById('tarifa-'+n)?.value) || '',
+      subtotal_dia    : parseFloat(document.getElementById('sub-dia-'+n)?.value) || '',
+    });
+  });
+
+  const importeRaw = document.getElementById('importe').value.replace('$','').trim();
+  const ivaRaw     = document.getElementById('iva').value.replace('$','').trim();
+
+  const datos = {
+    folio_c                   : document.getElementById('folio_c').value,
+    renta_anterior            : document.getElementById('renta_anterior').value.trim(),
+    renta_posterior           : document.getElementById('renta_posterior').value.trim(),
+    cliente_id                : document.getElementById('cliente_id').value,
+    razon_social              : document.getElementById('razon_social').value,
+    obra                      : document.getElementById('obra').value,
+    direccion_proyecto        : document.getElementById('direccion_proyecto').value,
+    ubicacion_entrega         : document.getElementById('ubicacion_entrega').value,
+    quien_recibe              : document.getElementById('quien_recibe').value,
+    movil_recibe              : document.getElementById('movil_recibe').value,
+    medio_contacto            : document.getElementById('medio_contacto').value,
+    requiere_flete            : document.getElementById('requiere_flete').value,
+    flete_a_cargo_de          : document.getElementById('flete_a_cargo_de').value,
+    distancia_km              : document.getElementById('distancia_km').value,
+    costo_flete               : document.getElementById('costo_flete').value,
+    tipo_operacion            : document.getElementById('tipo_operacion').value,
+    dias_renta                : document.getElementById('dias_renta').value,
+    fecha_contrato            : document.getElementById('fecha_contrato').value,
+    fecha_solicitada          : document.getElementById('fecha_solicitada').value,
+    fecha_vencimiento_estimada: document.getElementById('fecha_vencimiento_estimada').value,
+    agente                    : document.getElementById('agente').value,
+    forma_pago                : document.getElementById('forma_pago').value,
+    fecha_pago                : document.getElementById('fecha_pago').value,
+    factura                   : document.getElementById('factura').value,
+    notas                     : document.getElementById('notas').value,
+    subtotal                  : document.getElementById('subtotal').value,
+    costo_entrega             : document.getElementById('costo_entrega').value,
+    costo_recoleccion         : document.getElementById('costo_recoleccion').value,
+    costo_armado              : document.getElementById('costo_armado').value,
+    costo_desarmado           : document.getElementById('costo_desarmado').value,
+    otros_cargos              : document.getElementById('otros_cargos').value,
+    iva                       : ivaRaw,
+    importe                   : importeRaw,
+    anticipo                  : document.getElementById('anticipo').value,
+    renta_diaria              : document.getElementById('total-renta-diaria').textContent.replace('$',''),
+    peso_total_kg             : document.getElementById('total-peso').textContent,
+    pagare_monto              : document.getElementById('pagare_monto').value,
+    pagare_lugar              : document.getElementById('pagare_lugar').value,
+    pagare_fecha              : document.getElementById('pagare_fecha').value,
+    items,
+  };
+
+  document.getElementById('btn-guardar').disabled = true;
+  document.getElementById('btn-guardar').textContent = 'Guardando...';
+
+  var esPerdida = datos.tipo_operacion === 'VENTA PERDIDA';
+
+  google.script.run
+    .withSuccessHandler(res => {
+      var msg = esPerdida
+        ? `✓ Venta por pérdida ${res.folio} guardada — HS automática: ${res.folio_hs}`
+        : `✓ Contrato ${res.folio} guardado correctamente`;
+      showToast(msg, 'success');
+      setTimeout(() => google.script.host.close(), 2200);
+    })
+    .withFailureHandler(err => {
+      showToast('Error: ' + err.message, 'error');
+      document.getElementById('btn-guardar').disabled = false;
+      document.getElementById('btn-guardar').textContent = 'Guardar contrato';
+    })
+    [esPerdida ? 'guardarVentaPerdida' : 'guardarContrato'](datos);
+}
+
+function onTipoChange() {
+  var tipo    = document.getElementById('tipo_operacion').value;
+  var banner  = document.getElementById('banner-perdida');
+  if (!banner) {
+    // Crear banner si no existe
+    banner = document.createElement('div');
+    banner.id = 'banner-perdida';
+    banner.style.cssText = 'display:none;background:#fef2f2;border:1px solid #fca5a5;color:#991b1b;'
+      +'padding:10px 14px;border-radius:8px;font-size:12px;font-weight:600;margin-bottom:12px;';
+    banner.innerHTML = '🔴 VENTA POR PÉRDIDA — Al guardar se generará automáticamente una Hoja de Salida '
+      +'(HSP-{folio}) que descontará el equipo del inventario. '
+      +'Asegúrate de capturar correctamente los SKUs y cantidades.';
+    document.getElementById('tipo_operacion').closest('div').parentNode
+      .insertBefore(banner, document.getElementById('tipo_operacion').closest('div').parentNode.firstChild);
+  }
+  banner.style.display = tipo === 'VENTA PERDIDA' ? 'block' : 'none';
+}
+
+function limpiarPanel() {
+  google.script.host.close();
+}
+
+// ── UTILS ─────────────────────────────────────────────────────
+function fmtDate(d) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2,'0');
+  const day = String(d.getDate()).padStart(2,'0');
+  return y + '-' + m + '-' + day;
+}
+
+function showToast(msg, type) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast ' + (type || '');
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+</script>
+</body>
+</html>

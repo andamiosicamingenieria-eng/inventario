@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap');
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg:#f5f6fa; --surface:#fff; --border:#d1d5e0; --accent:#2563eb;
+    --text:#111827; --muted:#6b7280; --mono:'DM Mono',monospace; --sans:'DM Sans',sans-serif;
+    --verde:#dcfce7; --verde-t:#166534; --rojo:#fee2e2; --rojo-t:#991b1b;
+    --amarillo:#fef9c3; --amarillo-t:#854d0e;
+  }
+  body { font-family:var(--sans); font-size:13px; background:var(--bg); color:var(--text); padding:16px; min-width:520px; }
+
+  .header { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:16px; }
+  .header h2 { font-size:15px; font-weight:700; }
+  .header .folio { font-family:var(--mono); font-size:12px; color:var(--accent); }
+
+  .saldo-card { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:14px 16px; margin-bottom:16px; display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }
+  .saldo-item label { font-size:10px; font-weight:700; text-transform:uppercase; color:var(--muted); display:block; margin-bottom:4px; }
+  .saldo-item .valor { font-family:var(--mono); font-size:15px; font-weight:700; }
+  .valor-total   { color:var(--text); }
+  .valor-pagado  { color:var(--verde-t); }
+  .valor-saldo   { color:var(--rojo-t); }
+
+  .seccion { background:var(--surface); border:1px solid var(--border); border-radius:10px; margin-bottom:14px; overflow:hidden; }
+  .sec-header { padding:9px 14px; background:#f8faff; border-bottom:1px solid var(--border); font-weight:700; font-size:12px; display:flex; align-items:center; gap:8px; }
+  .sec-body { padding:14px; }
+
+  table { width:100%; border-collapse:collapse; font-size:12px; }
+  thead th { padding:6px 8px; font-size:10px; font-weight:700; text-transform:uppercase; color:var(--muted); background:#f3f4f6; border-bottom:1px solid var(--border); }
+  tbody tr { border-bottom:1px solid var(--border); }
+  tbody tr:hover { background:#f8faff; }
+  tbody td { padding:7px 8px; }
+  .empty { text-align:center; color:var(--muted); padding:16px; font-style:italic; }
+
+  .chip { display:inline-block; font-size:10px; font-weight:700; padding:2px 7px; border-radius:8px; }
+  .chip-anticipo { background:#dbeafe; color:#1e40af; }
+  .chip-abono    { background:var(--amarillo); color:var(--amarillo-t); }
+  .chip-total    { background:var(--verde); color:var(--verde-t); }
+
+  .form-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .form-group { display:flex; flex-direction:column; gap:4px; }
+  .form-group.full { grid-column:span 2; }
+  label { font-size:11px; font-weight:600; color:var(--muted); }
+  input, select, textarea {
+    padding:8px 10px; border:1px solid var(--border); border-radius:6px;
+    font-size:13px; font-family:var(--sans); background:var(--surface);
+    transition:border .15s;
+  }
+  input:focus, select:focus, textarea:focus { outline:none; border-color:var(--accent); }
+  textarea { resize:vertical; min-height:54px; }
+
+  .btn { padding:9px 16px; border-radius:7px; font-weight:600; font-size:12px; cursor:pointer; border:none; transition:all .15s; }
+  .btn-primary { background:var(--accent); color:#fff; }
+  .btn-primary:hover { background:#1d4ed8; }
+  .btn-ghost { background:#f3f4f6; color:var(--text); border:1px solid var(--border); }
+  .btn-ghost:hover { border-color:var(--accent); color:var(--accent); }
+  .btn-danger { background:transparent; border:none; color:#dc2626; cursor:pointer; font-size:11px; padding:2px 6px; }
+  .btn-danger:hover { text-decoration:underline; }
+
+  .actions { display:flex; gap:8px; justify-content:flex-end; margin-top:12px; }
+  .toast { position:fixed; bottom:16px; left:50%; transform:translateX(-50%); padding:9px 18px; border-radius:8px; font-size:12px; font-weight:600; z-index:999; opacity:0; transition:opacity .3s; pointer-events:none; }
+  .toast.show { opacity:1; }
+  .toast.ok    { background:#dcfce7; color:#166534; border:1px solid #86efac; }
+  .toast.err   { background:#fee2e2; color:#991b1b; border:1px solid #fca5a5; }
+  .spinner { display:inline-block; width:14px; height:14px; border:2px solid var(--border); border-top-color:var(--accent); border-radius:50%; animation:spin .7s linear infinite; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <h2>Registro de Pagos</h2>
+    <div class="folio" id="lbl-folio">—</div>
+    <div style="font-size:12px;color:var(--muted);margin-top:2px;" id="lbl-cliente">—</div>
+  </div>
+  <button class="btn btn-ghost" onclick="google.script.host.close()">✕ Cerrar</button>
+</div>
+
+<!-- Saldo -->
+<div class="saldo-card" id="saldo-card">
+  <div class="saldo-item">
+    <label>Total Contrato</label>
+    <div class="valor valor-total" id="val-total">—</div>
+  </div>
+  <div class="saldo-item">
+    <label>Total Pagado</label>
+    <div class="valor valor-pagado" id="val-pagado">—</div>
+  </div>
+  <div class="saldo-item">
+    <label>Saldo Pendiente</label>
+    <div class="valor valor-saldo" id="val-saldo">—</div>
+  </div>
+</div>
+
+<!-- Historial -->
+<div class="seccion">
+  <div class="sec-header">📋 Historial de Pagos</div>
+  <div id="historial-wrap" style="padding:8px;">
+    <div class="empty"><span class="spinner"></span></div>
+  </div>
+</div>
+
+<!-- Nuevo pago -->
+<div class="seccion">
+  <div class="sec-header">➕ Registrar Pago</div>
+  <div class="sec-body">
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Tipo de pago</label>
+        <select id="pago-tipo">
+          <option value="Anticipo">Anticipo</option>
+          <option value="Abono parcial" selected>Abono parcial</option>
+          <option value="Pago total">Pago total</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Monto</label>
+        <input type="number" id="pago-monto" placeholder="0.00" min="0" step="0.01">
+      </div>
+      <div class="form-group">
+        <label>Fecha</label>
+        <input type="date" id="pago-fecha">
+      </div>
+      <div class="form-group">
+        <label>Referencia / No. transferencia</label>
+        <input type="text" id="pago-ref" placeholder="Opcional">
+      </div>
+      <div class="form-group full">
+        <label>Notas</label>
+        <textarea id="pago-notas" placeholder="Opcional"></textarea>
+      </div>
+    </div>
+    <div class="actions">
+      <button class="btn btn-primary" onclick="registrarPago()">💾 Registrar pago</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+var _folioC   = '';
+var _cliente  = '';
+var _saldoData = null;
+
+var moneda = function(n) {
+  return '$' + Number(n||0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+};
+
+function showToast(msg, tipo) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show ' + (tipo==='error'?'err':'ok');
+  setTimeout(function(){ t.className='toast'; }, 3000);
+}
+
+function chipTipo(tipo) {
+  var cls = tipo==='Anticipo'?'chip-anticipo':tipo==='Pago total'?'chip-total':'chip-abono';
+  return '<span class="chip '+cls+'">'+tipo+'</span>';
+}
+
+function cargarSaldo() {
+  google.script.run
+    .withSuccessHandler(function(d) {
+      _saldoData = d;
+      document.getElementById('val-total').textContent  = moneda(d.importe);
+      document.getElementById('val-pagado').textContent = moneda(d.pagado);
+      document.getElementById('val-saldo').textContent  = moneda(d.saldo);
+      renderHistorial(d.pagos || []);
+    })
+    .withFailureHandler(function(e) {
+      document.getElementById('historial-wrap').innerHTML =
+        '<div class="empty" style="color:#dc2626;">Error: '+e.message+'</div>';
+    })
+    .getSaldoContrato(_folioC);
+}
+
+function renderHistorial(pagos) {
+  var wrap = document.getElementById('historial-wrap');
+  if (!pagos.length) {
+    wrap.innerHTML = '<div class="empty">Sin pagos registrados</div>';
+    return;
+  }
+  var h = '<table><thead><tr>'
+    +'<th>Fecha</th><th>Tipo</th><th>Monto</th><th>Referencia</th><th>Notas</th><th></th>'
+    +'</tr></thead><tbody>';
+  pagos.forEach(function(p) {
+    h += '<tr>'
+      +'<td>'+p.fecha+'</td>'
+      +'<td>'+chipTipo(p.tipo)+'</td>'
+      +'<td style="font-family:var(--mono);font-weight:700;">'+moneda(p.monto)+'</td>'
+      +'<td style="color:var(--muted);">'+(p.referencia||'—')+'</td>'
+      +'<td style="color:var(--muted);">'+(p.notas||'—')+'</td>'
+      +'<td><button class="btn-danger" onclick="eliminarPago('+p.id+')">✕</button></td>'
+      +'</tr>';
+  });
+  wrap.innerHTML = h+'</tbody></table>';
+}
+
+function registrarPago() {
+  var tipo  = document.getElementById('pago-tipo').value;
+  var monto = parseFloat(document.getElementById('pago-monto').value);
+  var fecha = document.getElementById('pago-fecha').value;
+  var ref   = document.getElementById('pago-ref').value.trim();
+  var notas = document.getElementById('pago-notas').value.trim();
+
+  if (!monto || monto <= 0) { showToast('Ingresa un monto válido', 'error'); return; }
+  if (!fecha)               { showToast('Selecciona la fecha del pago', 'error'); return; }
+
+  google.script.run
+    .withSuccessHandler(function() {
+      showToast('✓ Pago registrado', 'ok');
+      document.getElementById('pago-monto').value = '';
+      document.getElementById('pago-ref').value   = '';
+      document.getElementById('pago-notas').value = '';
+      cargarSaldo();
+    })
+    .withFailureHandler(function(e) { showToast('Error: '+e.message, 'error'); })
+    .registrarPago(_folioC, { tipo:tipo, monto:monto, fecha:fecha, referencia:ref, notas:notas });
+}
+
+function eliminarPago(id) {
+  if (!confirm('¿Eliminar este pago?')) return;
+  google.script.run
+    .withSuccessHandler(function(r) {
+      if (r.ok) { showToast('Pago eliminado', 'ok'); cargarSaldo(); }
+      else showToast('No se encontró el pago', 'error');
+    })
+    .eliminarPago(_folioC, id);
+}
+
+window.onload = function() {
+  // Leer parámetros pasados por PropertiesService
+  google.script.run
+    .withSuccessHandler(function(p) {
+      _folioC  = p.folio_c  || '';
+      _cliente = p.cliente  || '';
+      document.getElementById('lbl-folio').textContent   = 'Folio: ' + _folioC;
+      document.getElementById('lbl-cliente').textContent = _cliente;
+      // Fecha por defecto = hoy
+      document.getElementById('pago-fecha').value =
+        new Date().toISOString().split('T')[0];
+      cargarSaldo();
+    })
+    .getPanelPagosParams();
+};
+</script>
+</body>
+</html>

@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Panel Inventario — Visualización Rápida</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <!-- Supabase local para evitar bloqueos de CDN/Tracking Prevention -->
+  <script src="js/vendor/supabase.min.js"></script>
+  <style>
+    /* Override layout global (css/styles.css) for standalone page */
+    html, body { height: auto; min-height: 100%; overflow: auto; }
+    body { display: block; }
+    #inventory-root .table-wrapper {
+      overflow: auto;
+      max-height: calc(100vh - 260px);
+    }
+    .panel-header { display:flex; align-items:center; justify-content:space-between; gap:1rem; margin:1rem 0; }
+    .controls { display:flex; gap:.5rem; align-items:center; flex-wrap:wrap; }
+    #status { color:var(--text-muted); font-size:0.9rem; }
+    #last-updated { font-size:0.9rem; color:var(--text-muted); }
+    input[type=search]{ padding:.4rem .6rem; border-radius:6px; border:1px solid var(--border); }
+    button { padding:.45rem .7rem; border-radius:6px; border:1px solid var(--border); background:var(--bg-white); cursor:pointer }
+    .topline { display:flex; gap:1rem; align-items:center; justify-content:space-between; }
+  </style>
+</head>
+<body>
+  <main style="max-width:1100px;margin:1.5rem auto;">
+    <div class="topline">
+      <h2>Inventario — Panel Rápido</h2>
+      <div>
+        <a href="/" title="Volver a la app">Volver</a>
+      </div>
+    </div>
+
+    <div class="panel-header">
+      <div class="controls">
+        <input id="search" type="search" placeholder="Buscar SKU, nombre o almacén" aria-label="Buscar">
+        <button id="refresh-btn">Actualizar</button>
+        <button id="csv-btn">Descargar CSV</button>
+        <label style="display:flex;align-items:center;gap:.4rem"><input id="auto-toggle" type="checkbox" checked> Auto-refresh</label>
+      </div>
+      <div style="text-align:right">
+        <div id="last-updated">—</div>
+        <div id="status"></div>
+      </div>
+    </div>
+
+    <div id="inventory-root">
+      <div id="inventory-table"></div>
+    </div>
+
+    <p style="margin-top:1rem;font-size:0.9rem;color:var(--text-muted);">Nota: Si el panel muestra que el cliente Supabase no está disponible, revisa las políticas de bloqueo de seguimiento (Tracking Prevention) o carga local del cliente Supabase.</p>
+  </main>
+
+  <script type="module" src="js/inventario-panel.js"></script>
+</body>
+</html>

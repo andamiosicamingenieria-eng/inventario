@@ -1,0 +1,987 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f5f6fa;
+    --surface: #ffffff;
+    --surface2: #f0f2f7;
+    --border: #d1d5e0;
+    --border-focus: #2563eb;
+    --accent: #2563eb;
+    --accent2: #059669;
+    --danger: #dc2626;
+    --text: #111827;
+    --text-muted: #6b7280;
+    --text-dim: #374151;
+    --mono: 'DM Mono', monospace;
+    --sans: 'DM Sans', sans-serif;
+  }
+
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    font-size: 13px;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* ── HEADER ── */
+  .header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 10px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+  }
+  .header-left { display: flex; align-items: center; gap: 12px; }
+  .brand { font-family: var(--mono); font-size: 11px; color: var(--accent); letter-spacing: 0.1em; }
+  .folio-badge {
+    font-family: var(--mono);
+    font-size: 17px;
+    font-weight: 500;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    padding: 4px 12px;
+    border-radius: 6px;
+  }
+  .folio-badge span { color: var(--accent); }
+
+  /* ── TABS ── */
+  .tabs {
+    display: flex;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 20px;
+    gap: 2px;
+    flex-shrink: 0;
+  }
+  .tab {
+    padding: 8px 16px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-muted);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.15s;
+  }
+  .tab:hover { color: var(--text-dim); }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  /* ── CONTENT ── */
+  .content { flex: 1; overflow-y: auto; padding: 20px; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* ── GRID ── */
+  .grid { display: grid; gap: 14px; }
+  .grid-2 { grid-template-columns: 1fr 1fr; }
+  .grid-3 { grid-template-columns: 1fr 1fr 1fr; }
+  .grid-4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
+  .span-2 { grid-column: span 2; }
+  .span-3 { grid-column: span 3; }
+
+  .section { margin-bottom: 24px; }
+  .section-title {
+    font-size: 10px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.12em; color: var(--text-muted);
+    margin-bottom: 12px; padding-bottom: 6px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  /* ── CAMPOS ── */
+  .field { display: flex; flex-direction: column; gap: 4px; }
+  .field label {
+    font-size: 11px; font-weight: 500; color: var(--text-dim);
+    text-transform: uppercase; letter-spacing: 0.06em;
+  }
+  .field label .req { color: var(--accent); margin-left: 2px; }
+
+  input, select, textarea {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 13px;
+    padding: 7px 10px;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    width: 100%;
+    outline: none;
+  }
+  input:focus, select:focus, textarea:focus {
+    border-color: var(--border-focus);
+    box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+  }
+  input[readonly] { color: var(--text-muted); cursor: default; background: #f9fafb; }
+  input.calculated { color: var(--accent2); font-family: var(--mono); font-size: 12px; }
+  textarea { resize: vertical; min-height: 60px; }
+
+  /* ── BUSCAR CONTRATO ── */
+  .buscar-wrap {
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    border-radius: 8px;
+    padding: 14px 16px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .buscar-wrap input {
+    flex: 1;
+    background: white;
+    border-color: #bfdbfe;
+    font-family: var(--mono);
+    font-size: 14px;
+  }
+  .buscar-wrap input:focus { border-color: var(--accent); }
+  .btn-buscar {
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 7px 16px;
+    font-size: 13px;
+    font-weight: 500;
+    font-family: var(--sans);
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .btn-buscar:hover { background: #1d4ed8; }
+  .buscar-hint { font-size: 11px; color: #3b82f6; }
+
+  /* Contrato encontrado */
+  .contrato-found {
+    background: #f0fdf4;
+    border: 1px solid #86efac;
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin-bottom: 20px;
+    display: none;
+  }
+  .contrato-found.show { display: block; }
+  .found-title { font-size: 11px; font-weight: 600; color: #166534; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px; }
+  .found-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .found-item { display: flex; flex-direction: column; gap: 2px; }
+  .found-label { font-size: 10px; color: #4b5563; text-transform: uppercase; letter-spacing: 0.06em; }
+  .found-value { font-size: 12px; font-weight: 500; color: #111827; }
+  .found-value.mono { font-family: var(--mono); color: var(--accent); }
+
+  /* ── CARRITO ── */
+  .cart-header {
+    display: grid;
+    grid-template-columns: 140px 1fr 58px 58px 58px 58px 75px 32px;
+    gap: 6px;
+    padding: 0 0 6px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 8px;
+  }
+  .cart-header span {
+    font-size: 10px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.08em; color: var(--text-muted);
+  }
+  .cart-row {
+    display: grid;
+    grid-template-columns: 140px 1fr 58px 58px 58px 58px 75px 32px;
+    gap: 6px;
+    margin-bottom: 6px;
+    align-items: center;
+  }
+  .cart-row input, .cart-row select { font-size: 12px; padding: 6px 8px; }
+  .stock-cell {
+    font-family: var(--mono); font-size: 11px; font-weight: 700;
+    text-align: center; padding: 4px 3px; border-radius: 5px; line-height: 1.3;
+  }
+  .stock-ok   { background: #dcfce7; color: #166534; }
+  .stock-warn { background: #fef9c3; color: #854d0e; }
+  .stock-zero { background: #fee2e2; color: #991b1b; }
+  .stock-na   { background: #f3f4f6; color: #9ca3af; }
+  .qty-error  { border: 2px solid #ef4444 !important; background: #fff1f2 !important; }
+  .qty-ok     { border: 2px solid #22c55e !important; }
+  .btn-remove {
+    width: 28px; height: 28px;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--danger);
+    cursor: pointer;
+    font-size: 14px;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.15s;
+  }
+  .btn-remove:hover { background: #fee2e2; }
+  .btn-add-sku {
+    margin-top: 8px;
+    background: transparent;
+    border: 1px dashed var(--border);
+    border-radius: 6px;
+    color: var(--text-muted);
+    padding: 7px 14px;
+    font-size: 12px;
+    cursor: pointer;
+    font-family: var(--sans);
+    transition: all 0.15s;
+  }
+  .btn-add-sku:hover { border-color: var(--accent); color: var(--accent); }
+
+  .cart-totales {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+  }
+  .total-box {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+  }
+  .total-box .label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin-bottom: 4px; }
+  .total-box .value { font-family: var(--mono); font-size: 15px; font-weight: 500; color: var(--accent2); }
+
+  /* ── FOOTER ── */
+  .footer {
+    border-top: 1px solid var(--border);
+    padding: 12px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--surface);
+    flex-shrink: 0;
+  }
+  .footer-info { font-size: 11px; color: var(--text-muted); }
+  .footer-info span { color: var(--accent2); font-family: var(--mono); }
+  .btn-group { display: flex; gap: 8px; }
+  .btn {
+    padding: 8px 18px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    font-family: var(--sans);
+    cursor: pointer;
+    border: none;
+    transition: all 0.15s;
+  }
+  .btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--text-muted); }
+  .btn-ghost:hover { border-color: var(--text-muted); color: var(--text); }
+  .btn-primary { background: var(--accent); color: white; }
+  .btn-primary:hover { background: #1d4ed8; }
+  .btn-primary:disabled { background: var(--border); color: var(--text-muted); cursor: not-allowed; }
+
+  /* Toast */
+  .toast {
+    position: fixed; bottom: 70px; left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 18px;
+    font-size: 13px;
+    opacity: 0;
+    transition: all 0.25s;
+    pointer-events: none;
+    z-index: 999;
+    white-space: nowrap;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .toast.success { border-color: var(--accent2); color: var(--accent2); }
+  .toast.error { border-color: var(--danger); color: var(--danger); }
+
+  .reciente-card {
+    background: var(--surface);
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+  .reciente-card:hover {
+    border-color: var(--accent);
+    background: #eff6ff;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(37,99,235,0.1);
+  }
+  .reciente-folio { font-family: var(--mono); font-size: 13px; font-weight: 600; color: var(--accent); }
+  .reciente-cliente { font-size: 12px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .reciente-fecha { font-size: 11px; color: var(--text-muted); }
+  .reciente-obra { font-size: 11px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-thumb { background: #c1c5d0; border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-left">
+    <span class="brand">ICAM 360</span>
+    <div class="folio-badge">HS <span id="folio-display">···</span></div>
+  </div>
+  <div style="font-size:11px;color:var(--text-muted);">Hoja de Salida · <span id="fecha-hoy"></span></div>
+</div>
+
+<!-- TABS -->
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('contrato')">① Contrato</div>
+  <div class="tab" onclick="switchTab('entrega')">② Entrega</div>
+  <div class="tab" onclick="switchTab('equipo')">③ Equipo <span id="badge-equipo" style="font-size:10px;color:var(--accent2);"></span></div>
+  <div class="tab" onclick="switchTab('notas')">④ Notas</div>
+</div>
+
+<!-- CONTENT -->
+<div class="content">
+
+  <!-- TAB 1: CONTRATO -->
+  <div class="tab-panel active" id="panel-contrato">
+
+    <!-- Contratos recientes -->
+    <div id="recientes-wrap" style="margin-bottom:16px;">
+      <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-muted);margin-bottom:8px;">Contratos recientes</div>
+      <div id="recientes-grid" style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;">
+        <div style="grid-column:span 5;font-size:12px;color:var(--text-muted);padding:10px 0;">Cargando...</div>
+      </div>
+    </div>
+
+    <!-- Buscador -->
+    <div class="buscar-wrap">
+      <input type="text" id="buscar-folio" placeholder="Escribe el folio del contrato..." oninput="limpiarContrato()">
+      <button class="btn-buscar" onclick="buscarContrato()">Buscar</button>
+      <span class="buscar-hint">O deja vacío para captura libre</span>
+    </div>
+
+    <!-- Contrato encontrado -->
+    <div class="contrato-found" id="contrato-found">
+      <div class="found-title">✓ Contrato encontrado</div>
+      <div class="found-grid">
+        <div class="found-item"><span class="found-label">Folio</span><span class="found-value mono" id="found-folio">—</span></div>
+        <div class="found-item"><span class="found-label">Folio raíz</span><span class="found-value mono" id="found-raiz">—</span></div>
+        <div class="found-item"><span class="found-label">Cliente</span><span class="found-value" id="found-cliente">—</span></div>
+        <div class="found-item"><span class="found-label">Días renta</span><span class="found-value" id="found-dias">—</span></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Datos del contrato</div>
+      <div class="grid grid-3">
+        <div class="field">
+          <label>Folio contrato <span class="req">*</span></label>
+          <input type="text" id="folio_contrato" placeholder="Ej: 3500">
+        </div>
+        <div class="field">
+          <label>Folio raíz</label>
+          <input type="text" id="folio_raiz" readonly class="calculated">
+        </div>
+        <div class="field">
+          <label>Tipo operación</label>
+          <input type="text" id="tipo_operacion" readonly class="calculated">
+        </div>
+        <div class="field span-2">
+          <label>Cliente</label>
+          <input type="text" id="razon_social" readonly class="calculated">
+        </div>
+        <div class="field">
+          <label>Días de renta</label>
+          <input type="text" id="dias_renta" readonly class="calculated">
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Obra</div>
+      <div class="grid grid-2">
+        <div class="field span-2">
+          <label>Nombre de la obra</label>
+          <input type="text" id="obra" readonly class="calculated">
+        </div>
+        <div class="field">
+          <label>Ubicación entrega</label>
+          <input type="text" id="ubicacion_entrega" readonly class="calculated">
+        </div>
+        <div class="field">
+          <label>Quien recibe</label>
+          <input type="text" id="quien_recibe" readonly class="calculated">
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- TAB 2: ENTREGA -->
+  <div class="tab-panel" id="panel-entrega">
+    <div class="section">
+      <div class="section-title">Datos de la entrega</div>
+      <div class="grid grid-3">
+        <div class="field">
+          <label>Fecha de entrega <span class="req">*</span></label>
+          <input type="date" id="fecha_entrega">
+        </div>
+        <div class="field">
+          <label>Hora de salida</label>
+          <input type="time" id="hora_salida">
+        </div>
+        <div class="field">
+          <label>Operador / Chofer <span class="req">*</span></label>
+          <input type="text" id="operador" placeholder="Nombre del operador">
+        </div>
+        <div class="field">
+          <label>Vencimiento estimado</label>
+          <input type="text" id="fecha_vencimiento" readonly class="calculated" placeholder="Se calcula al guardar">
+        </div>
+        <div class="field">
+          <label>Estatus inicial</label>
+          <select id="estatus_entrega">
+            <option value="EN RENTA">En Renta</option>
+            <option value="RENOVACION">Renovación</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 3: EQUIPO -->
+  <div class="tab-panel" id="panel-equipo">
+    <div class="section">
+      <div class="section-title">Equipo despachado</div>
+
+      <div class="cart-header">
+        <span>SKU</span>
+        <span>Descripción</span>
+        <span title="Stock disponible en almacén">📦 Stock</span>
+        <span title="Cantidad en el contrato">Contrato</span>
+        <span title="Ya entregado en HS anteriores">Entregado</span>
+        <span title="Pendiente por enviar">Pendiente</span>
+        <span>Cantidad</span>
+        <span></span>
+      </div>
+      <div id="cart-rows"></div>
+      <button class="btn-add-sku" onclick="agregarFila()">+ Agregar línea</button>
+
+      <div class="cart-totales">
+        <div class="total-box">
+          <div class="label">Total piezas</div>
+          <div class="value" id="total-piezas">0</div>
+        </div>
+        <div class="total-box">
+          <div class="label">Peso total (kg)</div>
+          <div class="value" id="total-peso">0.00</div>
+        </div>
+        <div class="total-box">
+          <div class="label">SKUs distintos</div>
+          <div class="value" id="total-skus">0</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 4: NOTAS -->
+  <div class="tab-panel" id="panel-notas">
+    <div class="section">
+      <div class="section-title">Observaciones</div>
+      <div class="grid">
+        <div class="field">
+          <label>Notas de salida</label>
+          <textarea id="notas" rows="5" placeholder="Condiciones del equipo, instrucciones especiales, observaciones de la entrega..."></textarea>
+        </div>
+        <div class="field">
+          <label>Número de factura (si aplica)</label>
+          <input type="text" id="factura" placeholder="Folio de factura relacionada">
+        </div>
+      </div>
+    </div>
+
+    <!-- Resumen antes de guardar -->
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:16px;margin-top:8px;">
+      <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-muted);margin-bottom:10px;">Resumen HS</div>
+      <div style="font-size:12px;color:var(--text-dim);line-height:2;">
+        Folio HS: <strong id="sum-folio-hs" style="color:var(--accent);font-family:var(--mono);">—</strong><br>
+        Contrato: <strong id="sum-contrato">—</strong> &nbsp;·&nbsp; Cliente: <strong id="sum-cliente">—</strong><br>
+        Fecha entrega: <strong id="sum-fecha">—</strong> &nbsp;·&nbsp; Operador: <strong id="sum-operador">—</strong><br>
+        Equipo: <strong id="sum-piezas">—</strong> piezas &nbsp;/&nbsp; <strong id="sum-peso">—</strong> kg<br>
+        Vencimiento estimado: <strong id="sum-vence" style="color:var(--accent2);">—</strong>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- FOOTER -->
+<div class="footer">
+  <div class="footer-info">
+    Piezas: <span id="footer-piezas">0</span> &nbsp;·&nbsp;
+    Peso: <span id="footer-peso">0</span> kg &nbsp;·&nbsp;
+    Operador: <span id="footer-operador">—</span>
+  </div>
+  <div class="btn-group">
+    <button class="btn btn-ghost" onclick="google.script.host.close()">Cancelar</button>
+    <button class="btn btn-primary" id="btn-guardar" onclick="guardar()">Guardar HS</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── ESTADO ────────────────────────────────────────────────────
+var PRODUCTOS      = [];
+var _itemCount     = 0;
+var STOCK_MAP      = {}; // { SKU: { stock, contrato, entregado, pendiente } }
+var _contratoData  = null;
+
+// ── INIT ──────────────────────────────────────────────────────
+window.onload = function() {
+  var hoy = new Date();
+  document.getElementById('fecha-hoy').textContent =
+    hoy.toLocaleDateString('es-MX', {day:'2-digit', month:'short', year:'numeric'});
+  document.getElementById('fecha_entrega').value = fmtDate(hoy);
+
+  google.script.run
+    .withSuccessHandler(function(f) {
+      document.getElementById('folio-display').textContent = f;
+    })
+    .getSiguienteHojaHS();
+
+  google.script.run
+    .withSuccessHandler(function(lista) {
+      PRODUCTOS = lista;
+      agregarFila();
+    })
+    .getProductos();
+
+  // Cargar contratos recientes
+  google.script.run
+    .withSuccessHandler(function(lista) {
+      var grid = document.getElementById('recientes-grid');
+      if (!lista || lista.length === 0) {
+        grid.innerHTML = '<div style="grid-column:span 5;font-size:12px;color:var(--text-muted);padding:8px 0;">Sin contratos recientes</div>';
+        return;
+      }
+      grid.innerHTML = '';
+      lista.forEach(function(c) {
+        var card = document.createElement('div');
+        card.className = 'reciente-card';
+        card.innerHTML =
+          '<span class="reciente-folio">#' + c.folio_c + '</span>' +
+          '<span class="reciente-cliente">' + (c.razon_social || '—') + '</span>' +
+          '<span class="reciente-obra">' + (c.obra || '—') + '</span>' +
+          '<span class="reciente-fecha">📅 ' + (c.fecha_solicitada || c.fecha_contrato || '—') + '</span>';
+        card.addEventListener('click', function() {
+          document.getElementById('buscar-folio').value = c.folio_c;
+          buscarContrato();
+        });
+        grid.appendChild(card);
+      });
+    })
+    .getContratosRecientes();
+};
+
+// ── TABS ──────────────────────────────────────────────────────
+function switchTab(tab) {
+  var tabs = ['contrato','entrega','equipo','notas'];
+  tabs.forEach(function(t, i) {
+    document.querySelectorAll('.tab')[i].classList.toggle('active', t === tab);
+    document.getElementById('panel-' + t).classList.toggle('active', t === tab);
+  });
+  if (tab === 'notas') actualizarResumen();
+}
+
+// ── BUSCAR CONTRATO ───────────────────────────────────────────
+function buscarContrato() {
+  var folio = document.getElementById('buscar-folio').value.trim();
+  if (!folio) { showToast('Escribe un folio para buscar', 'error'); return; }
+
+  google.script.run
+    .withSuccessHandler(function(c) {
+      if (!c) {
+        showToast('Folio ' + folio + ' no encontrado', 'error');
+        return;
+      }
+      _contratoData = c;
+      // Llenar campos
+      document.getElementById('folio_contrato').value    = c.folio_c        || '';
+      document.getElementById('folio_raiz').value        = c.folio_raiz     || '';
+      document.getElementById('tipo_operacion').value    = c.tipo_operacion  || '';
+      document.getElementById('razon_social').value      = c.razon_social   || '';
+      document.getElementById('dias_renta').value        = c.dias_renta     || '';
+      document.getElementById('obra').value              = c.obra           || '';
+      document.getElementById('ubicacion_entrega').value = c.ubicacion_entrega || '';
+      document.getElementById('quien_recibe').value      = c.quien_recibe   || '';
+
+      // Llenar resumen encontrado
+      document.getElementById('found-folio').textContent   = c.folio_c    || '—';
+      document.getElementById('found-raiz').textContent    = c.folio_raiz || '—';
+      document.getElementById('found-cliente').textContent = c.razon_social|| '—';
+      document.getElementById('found-dias').textContent    = (c.dias_renta || '—') + ' días';
+      document.getElementById('contrato-found').classList.add('show');
+
+      // Si el contrato fue completamente enviado, avisar
+      if (c.todo_enviado) {
+        showToast('⚠ Todo el equipo de este contrato ya fue enviado', 'error');
+      }
+
+      // Cargar stock de inventario para este folio
+      var folioC = c.folio_c || '';
+      if (folioC) {
+        google.script.run
+          .withSuccessHandler(function(mapa) {
+            STOCK_MAP = mapa || {};
+            // Refrescar badges de stock en filas ya existentes
+            document.querySelectorAll('.cart-row').forEach(function(row) {
+              var n = row.id.replace('row-','');
+              var sku = document.getElementById('sku-'+n) && document.getElementById('sku-'+n).value;
+              if (sku) actualizarStockBadge(n, sku);
+            });
+          })
+          .withFailureHandler(function(e) { console.error('Stock map error: '+e.message); })
+          .getStockLoteHS(folioC);
+      }
+
+      // Cargar items con estado pendiente/completo
+      if (c.items && c.items.length > 0) {
+        document.getElementById('cart-rows').innerHTML = '';
+        _itemCount = 0;
+
+        // Mostrar aviso de envíos parciales si aplica
+        var avisoEl = document.getElementById('aviso-parcial');
+        if (avisoEl) avisoEl.remove();
+        if (c.hay_completos && c.hay_pendientes) {
+          var aviso = document.createElement('div');
+          aviso.id  = 'aviso-parcial';
+          aviso.style.cssText = 'background:#fefce8;border:1px solid #fde047;border-radius:6px;padding:8px 12px;font-size:12px;color:#854d0e;margin-bottom:10px;';
+          aviso.textContent   = '⚠ Envío parcial detectado — se muestran primero los pendientes, luego los ya enviados (en gris).';
+          document.getElementById('cart-rows').before(aviso);
+        }
+
+        c.items.forEach(function(item) {
+          agregarFila(item);
+        });
+      }
+
+      if (!c.todo_enviado) showToast('Contrato ' + folio + ' cargado ✓', 'success');
+    })
+    .withFailureHandler(function(err) {
+      showToast('Error: ' + err.message, 'error');
+    })
+    .getContratoParaHS(folio);
+}
+
+function limpiarContrato() {
+  if (!document.getElementById('buscar-folio').value) {
+    document.getElementById('contrato-found').classList.remove('show');
+    _contratoData = null;
+  }
+}
+
+// ── CARRITO ───────────────────────────────────────────────────
+function buildOpts() {
+  var html = '<option value="">— SKU —</option>';
+  PRODUCTOS.forEach(function(p) {
+    html += '<option value="' + p.sku + '" data-desc="' + p.descripcion +
+            '" data-peso="' + p.peso_unitario_kg + '">' +
+            p.sku + ' — ' + p.descripcion + '</option>';
+  });
+  return html;
+}
+
+function agregarFila(item) {
+  _itemCount++;
+  var n        = _itemCount;
+  var completo = item && item.completo;
+  var div      = document.createElement('div');
+  div.className = 'cart-row';
+  div.id = 'row-' + n;
+  if (completo) div.style.cssText = 'opacity:0.45;pointer-events:none;';
+
+  div.innerHTML =
+    '<select id="sku-' + n + '" onchange="onSkuChange(' + n + ')">' + buildOpts() + '</select>' +
+    '<input type="text"   id="desc-'  + n + '" readonly placeholder="—">' +
+    // 4 celdas de stock (readonly, se llenan por actualizarStockBadge)
+    '<div  id="st-stock-' + n + '" class="stock-cell stock-na">—</div>' +
+    '<div  id="st-cont-'  + n + '" class="stock-cell stock-na">—</div>' +
+    '<div  id="st-ent-'   + n + '" class="stock-cell stock-na">—</div>' +
+    '<div  id="st-pend-'  + n + '" class="stock-cell stock-na">—</div>' +
+    '<input type="number" id="qty-'   + n + '" placeholder="0" min="0" oninput="calcFila(' + n + ')"' + (completo ? ' readonly' : '') + '>' +
+    // Campos ocultos para peso (usados en totales y guardado)
+    '<input type="hidden" id="pesou-' + n + '" value="0">' +
+    '<input type="hidden" id="pesot-' + n + '" value="0">' +
+    (completo
+      ? '<span style="font-size:10px;color:#059669;font-weight:600;white-space:nowrap;">✓ Enviado</span>'
+      : '<button class="btn-remove" onclick="eliminarFila(' + n + ')">×</button>');
+  document.getElementById('cart-rows').appendChild(div);
+
+  if (item) {
+    var sel = document.getElementById('sku-' + n);
+    for (var i = 0; i < sel.options.length; i++) {
+      if (sel.options[i].value === item.sku) { sel.selectedIndex = i; break; }
+    }
+    onSkuChange(n);
+    document.getElementById('qty-'  + n).value = item.cantidad    || '';
+    document.getElementById('desc-' + n).value = item.descripcion || '';
+    if (completo && item.cantidad_enviada !== undefined) {
+      div.title = 'Ya enviado: ' + item.cantidad_enviada + ' / ' + item.cantidad_contrato;
+    }
+    calcFila(n);
+  }
+
+  actualizarTotales();
+  actualizarBadge();
+}
+
+// Actualiza los 4 badges de stock de una fila dado su SKU
+function actualizarStockBadge(n, sku) {
+  var info = STOCK_MAP[String(sku).toUpperCase()] || STOCK_MAP[String(sku)] || null;
+
+  var elStock = document.getElementById('st-stock-' + n);
+  var elCont  = document.getElementById('st-cont-'  + n);
+  var elEnt   = document.getElementById('st-ent-'   + n);
+  var elPend  = document.getElementById('st-pend-'  + n);
+  if (!elStock) return;
+
+  if (!info || !sku) {
+    [elStock, elCont, elEnt, elPend].forEach(function(el) {
+      el.textContent = '—';
+      el.className = 'stock-cell stock-na';
+    });
+    return;
+  }
+
+  // Stock disponible
+  elStock.textContent = info.stock;
+  elStock.className   = 'stock-cell ' + (info.stock <= 0 ? 'stock-zero' : info.stock < 5 ? 'stock-warn' : 'stock-ok');
+
+  // Contrato
+  elCont.textContent = info.contrato || '—';
+  elCont.className   = 'stock-cell stock-na';
+
+  // Ya entregado
+  elEnt.textContent = info.entregado || 0;
+  elEnt.className   = 'stock-cell stock-na';
+
+  // Pendiente — resaltar si hay algo por enviar
+  elPend.textContent = info.pendiente;
+  elPend.className   = 'stock-cell ' + (info.pendiente > 0 ? 'stock-warn' : 'stock-ok');
+
+  // Pre-llenar cantidad con pendiente si el campo está vacío
+  var qtyEl = document.getElementById('qty-' + n);
+  if (qtyEl && (!qtyEl.value || qtyEl.value === '0') && info.pendiente > 0) {
+    qtyEl.value = info.pendiente;
+    calcFila(n);
+  }
+}
+
+function onSkuChange(n) {
+  var sel = document.getElementById('sku-' + n);
+  var opt = sel.options[sel.selectedIndex];
+  document.getElementById('desc-'  + n).value = opt.dataset.desc || '';
+  document.getElementById('pesou-' + n) && (document.getElementById('pesou-' + n).value = opt.dataset.peso || 0);
+  var sku = sel.value;
+  actualizarStockBadge(n, sku);
+  calcFila(n);
+}
+
+function calcFila(n) {
+  var qtyEl  = document.getElementById('qty-'   + n);
+  var pesoEl = document.getElementById('pesou-' + n);
+  var totEl  = document.getElementById('pesot-' + n);
+  var qty    = parseFloat(qtyEl  && qtyEl.value)  || 0;
+  var pesoU  = parseFloat(pesoEl && pesoEl.value) || 0;
+  if (totEl) totEl.value = (qty * pesoU).toFixed(2);
+
+  // Validar contra stock disponible
+  var sel  = document.getElementById('sku-' + n);
+  var sku  = sel && sel.value;
+  if (sku && qty > 0) {
+    var info  = STOCK_MAP[String(sku).toUpperCase()] || STOCK_MAP[String(sku)] || null;
+    var stock = info ? info.stock : null;
+    if (stock !== null) {
+      if (qty > stock) {
+        qtyEl.classList.add('qty-error');
+        qtyEl.classList.remove('qty-ok');
+        qtyEl.title = '⚠ Supera el stock disponible (' + stock + ' piezas)';
+      } else {
+        qtyEl.classList.remove('qty-error');
+        qtyEl.classList.add('qty-ok');
+        qtyEl.title = '';
+      }
+    }
+  } else if (qtyEl) {
+    qtyEl.classList.remove('qty-error','qty-ok');
+    qtyEl.title = '';
+  }
+
+  actualizarTotales();
+  actualizarBadge();
+}
+
+function eliminarFila(n) {
+  var el = document.getElementById('row-' + n);
+  if (el) el.remove();
+  actualizarTotales();
+  actualizarBadge();
+}
+
+function actualizarTotales() {
+  var piezas = 0, peso = 0, skus = new Set();
+  document.querySelectorAll('.cart-row').forEach(function(row) {
+    if (row.style.pointerEvents === 'none') return; // saltar completos
+    var n = row.id.replace('row-', '');
+    var sku = document.getElementById('sku-' + n) && document.getElementById('sku-' + n).value;
+    if (sku) skus.add(sku);
+    piezas += parseFloat(document.getElementById('qty-' + n) && document.getElementById('qty-' + n).value) || 0;
+    peso   += parseFloat(document.getElementById('pesot-' + n) && document.getElementById('pesot-' + n).value) || 0;
+  });
+  document.getElementById('total-piezas').textContent = piezas;
+  document.getElementById('total-peso').textContent   = peso.toFixed(2);
+  document.getElementById('total-skus').textContent   = skus.size;
+  document.getElementById('footer-piezas').textContent= piezas;
+  document.getElementById('footer-peso').textContent  = peso.toFixed(2);
+}
+
+function actualizarBadge() {
+  var n = document.querySelectorAll('.cart-row').length;
+  document.getElementById('badge-equipo').textContent = n > 0 ? '(' + n + ')' : '';
+}
+
+// ── RESUMEN ───────────────────────────────────────────────────
+function actualizarResumen() {
+  document.getElementById('sum-folio-hs').textContent  = document.getElementById('folio-display').textContent;
+  document.getElementById('sum-contrato').textContent  = document.getElementById('folio_contrato').value || '—';
+  document.getElementById('sum-cliente').textContent   = document.getElementById('razon_social').value || '—';
+  document.getElementById('sum-fecha').textContent     = document.getElementById('fecha_entrega').value || '—';
+  document.getElementById('sum-operador').textContent  = document.getElementById('operador').value || '—';
+  document.getElementById('sum-piezas').textContent    = document.getElementById('total-piezas').textContent;
+  document.getElementById('sum-peso').textContent      = document.getElementById('total-peso').textContent;
+
+  // Calcular vencimiento
+  var fechaEnt = document.getElementById('fecha_entrega').value;
+  var dias     = parseInt(document.getElementById('dias_renta').value) || 0;
+  if (fechaEnt && dias) {
+    var d = new Date(fechaEnt + 'T12:00:00');
+    d.setDate(d.getDate() + dias);
+    var vence = fmtDate(d);
+    document.getElementById('sum-vence').textContent         = vence;
+    document.getElementById('fecha_vencimiento').value       = vence;
+  } else {
+    document.getElementById('sum-vence').textContent = '—';
+  }
+
+  document.getElementById('footer-operador').textContent = document.getElementById('operador').value || '—';
+}
+
+// ── GUARDAR ───────────────────────────────────────────────────
+function guardar() {
+  var folioCont = document.getElementById('folio_contrato').value.trim();
+  var operador  = document.getElementById('operador').value.trim();
+  var fechaEnt  = document.getElementById('fecha_entrega').value;
+
+  if (!folioCont) { showToast('Indica el folio del contrato', 'error'); switchTab('contrato'); return; }
+  if (!operador)  { showToast('Indica el operador / chofer', 'error'); switchTab('entrega'); return; }
+  if (!fechaEnt)  { showToast('Indica la fecha de entrega', 'error'); switchTab('entrega'); return; }
+
+  var rows = document.querySelectorAll('.cart-row');
+  if (rows.length === 0) { showToast('Agrega al menos un SKU', 'error'); switchTab('equipo'); return; }
+
+  // Bloquear si alguna fila supera el stock disponible
+  var rowsConError = document.querySelectorAll('.qty-error');
+  if (rowsConError.length > 0) {
+    showToast('⚠ Una o más cantidades superan el stock disponible', 'error');
+    switchTab('equipo');
+    return;
+  }
+
+  var items = [];
+  rows.forEach(function(row) {
+    if (row.style.pointerEvents === 'none') return; // saltar completos
+    var n   = row.id.replace('row-', '');
+    var sku = document.getElementById('sku-' + n) && document.getElementById('sku-' + n).value;
+    if (!sku) return;
+    var qty = parseFloat(document.getElementById('qty-' + n).value) || 0;
+    if (qty <= 0) return; // saltar sin cantidad
+    items.push({
+      sku             : sku,
+      descripcion     : document.getElementById('desc-' + n).value || '',
+      cantidad        : qty,
+      peso_unitario_kg: parseFloat(document.getElementById('pesou-' + n).value) || 0,
+      peso_total_kg   : parseFloat(document.getElementById('pesot-' + n).value) || 0,
+    });
+  });
+
+  // Calcular vencimiento
+  var vence = '';
+  var dias  = parseInt(document.getElementById('dias_renta').value) || 0;
+  if (fechaEnt && dias) {
+    var d = new Date(fechaEnt + 'T12:00:00');
+    d.setDate(d.getDate() + dias);
+    vence = fmtDate(d);
+  }
+
+  var datos = {
+    folio_contrato            : folioCont,
+    folio_raiz                : document.getElementById('folio_raiz').value,
+    razon_social              : document.getElementById('razon_social').value,
+    obra                      : document.getElementById('obra').value,
+    ubicacion_entrega         : document.getElementById('ubicacion_entrega').value,
+    quien_recibe              : document.getElementById('quien_recibe').value,
+    fecha_entrega             : fechaEnt,
+    hora_salida               : document.getElementById('hora_salida').value,
+    operador                  : operador,
+    estatus_entrega           : document.getElementById('estatus_entrega').value,
+    fecha_vencimiento_estimada: vence,
+    notas                     : document.getElementById('notas').value,
+    factura                   : document.getElementById('factura').value,
+    items                     : items,
+  };
+
+  document.getElementById('btn-guardar').disabled    = true;
+  document.getElementById('btn-guardar').textContent = 'Guardando...';
+
+  google.script.run
+    .withSuccessHandler(function(res) {
+      showToast('✓ HS ' + res.folio_hs + ' guardada correctamente', 'success');
+      setTimeout(function() { google.script.host.close(); }, 1800);
+    })
+    .withFailureHandler(function(err) {
+      showToast('Error: ' + err.message, 'error');
+      document.getElementById('btn-guardar').disabled    = false;
+      document.getElementById('btn-guardar').textContent = 'Guardar HS';
+    })
+    .guardarHojaHS(datos);
+}
+
+// ── UTILS ─────────────────────────────────────────────────────
+function fmtDate(d) {
+  var y  = d.getFullYear();
+  var m  = String(d.getMonth() + 1).padStart(2, '0');
+  var dd = String(d.getDate()).padStart(2, '0');
+  return y + '-' + m + '-' + dd;
+}
+
+function showToast(msg, type) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast ' + (type || '');
+  t.classList.add('show');
+  setTimeout(function() { t.classList.remove('show'); }, 3000);
+}
+
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') google.script.host.close();
+});
+</script>
+</body>
+</html>

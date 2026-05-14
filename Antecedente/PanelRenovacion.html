@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Renovación — ICAM 360</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', sans-serif; background: #f5f6fa; color: #1f2937; font-size: 13px; }
+
+  .header {
+    background: #1f2937; color: white; padding: 14px 20px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .header h2 { font-size: 16px; font-weight: 600; }
+  .folio-badge { background: #374151; color: #34d399; padding: 4px 12px; border-radius: 20px; font-family: monospace; font-size: 13px; font-weight: 700; }
+  .renovacion-tag { background: #7c3aed; color: white; padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 700; margin-left: 8px; }
+
+  /* Tabs */
+  .tabs { display: flex; background: white; border-bottom: 2px solid #e5e7eb; padding: 0 20px; }
+  .tab { padding: 10px 18px; cursor: pointer; font-size: 13px; font-weight: 500; color: #6b7280; border-bottom: 3px solid transparent; margin-bottom: -2px; transition: all .2s; }
+  .tab.active { color: #7c3aed; border-bottom-color: #7c3aed; }
+  .tab-content { display: none; padding: 16px 20px; max-height: 580px; overflow-y: auto; }
+  .tab-content.active { display: block; }
+
+  /* Banner origen */
+  .origen-banner {
+    background: linear-gradient(135deg, #ede9fe, #f5f3ff);
+    border: 1px solid #c4b5fd; border-radius: 8px;
+    padding: 12px 16px; margin-bottom: 16px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .origen-banner .icon { font-size: 22px; }
+  .origen-banner .info { flex: 1; }
+  .origen-banner .info strong { color: #5b21b6; font-size: 13px; }
+  .origen-banner .info small { color: #7c3aed; display: block; font-size: 11px; }
+
+  /* Form */
+  .section-title {
+    font-size: 11px; font-weight: 700; color: #6b7280; text-transform: uppercase;
+    letter-spacing: .5px; margin: 14px 0 8px; padding-bottom: 4px; border-bottom: 1px solid #e5e7eb;
+  }
+  .form-row { display: grid; gap: 10px; margin-bottom: 10px; }
+  .form-row.cols-2 { grid-template-columns: 1fr 1fr; }
+  .form-row.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+  .form-row.cols-4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
+  .form-group label { display: block; font-size: 11px; font-weight: 600; color: #6b7280; margin-bottom: 4px; }
+  .form-group input, .form-group select, .form-group textarea {
+    width: 100%; padding: 7px 10px; border: 1px solid #d1d5db; border-radius: 6px;
+    font-size: 13px; background: white; color: #1f2937;
+  }
+  .form-group input:focus, .form-group select:focus { outline: none; border-color: #7c3aed; box-shadow: 0 0 0 2px #ede9fe; }
+  .form-group input.heredado { background: #f5f3ff; border-color: #c4b5fd; }
+
+  /* Items table */
+  .items-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 10px; }
+  .items-table th { background: #f3f4f6; padding: 7px 8px; text-align: left; font-size: 11px; font-weight: 700; color: #6b7280; border-bottom: 1px solid #e5e7eb; }
+  .items-table td { padding: 6px 8px; border-bottom: 1px solid #f3f4f6; vertical-align: middle; }
+  .items-table tr:hover td { background: #faf5ff; }
+  .items-table input[type="number"] { width: 75px; padding: 4px 6px; border: 1px solid #d1d5db; border-radius: 4px; font-size: 12px; text-align: center; }
+  .items-table input[type="text"] { width: 100%; padding: 4px 6px; border: 1px solid #d1d5db; border-radius: 4px; font-size: 12px; }
+  .heredado-badge { background: #ede9fe; color: #6d28d9; padding: 2px 6px; border-radius: 8px; font-size: 10px; font-weight: 600; }
+  .nuevo-badge { background: #dcfce7; color: #166534; padding: 2px 6px; border-radius: 8px; font-size: 10px; font-weight: 600; }
+
+  .add-row-btn {
+    background: none; border: 1px dashed #d1d5db; border-radius: 6px;
+    padding: 7px; width: 100%; color: #9ca3af; cursor: pointer; font-size: 12px;
+    margin-bottom: 12px; transition: all .2s;
+  }
+  .add-row-btn:hover { border-color: #7c3aed; color: #7c3aed; background: #f5f3ff; }
+
+  /* SKU autocomplete */
+  .sku-wrapper { position: relative; }
+  .sku-dropdown {
+    display: none; position: absolute; top: 100%; left: 0; z-index: 500;
+    background: white; border: 1px solid #d1d5db; border-radius: 4px;
+    max-height: 160px; overflow-y: auto; min-width: 280px;
+    box-shadow: 0 4px 12px rgba(0,0,0,.1);
+  }
+  .sku-option { padding: 6px 10px; cursor: pointer; font-size: 12px; border-bottom: 1px solid #f3f4f6; }
+  .sku-option:hover { background: #f5f3ff; }
+
+  /* Totales */
+  .totales-bar {
+    background: #1f2937; border-radius: 8px; padding: 10px 16px;
+    display: flex; gap: 24px; margin-bottom: 14px;
+  }
+  .total-item .val { font-size: 20px; font-weight: 700; color: white; font-family: monospace; }
+  .total-item .lbl { font-size: 10px; color: #9ca3af; }
+
+  /* Resumen */
+  .resumen-box {
+    background: white; border: 1px solid #e5e7eb; border-radius: 8px;
+    padding: 14px; font-size: 13px; margin-bottom: 14px;
+  }
+  .resumen-row { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #f3f4f6; }
+  .resumen-row:last-child { border: none; }
+  .resumen-row .lbl { color: #6b7280; }
+  .resumen-row .val { font-weight: 600; }
+  .resumen-row.total .val { color: #7c3aed; font-size: 15px; }
+
+  /* Footer */
+  .footer-btns { display: flex; gap: 10px; justify-content: flex-end; padding: 12px 20px; background: white; border-top: 1px solid #e5e7eb; }
+  .btn-cancel { padding: 8px 20px; border: 1px solid #d1d5db; border-radius: 6px; background: white; color: #4b5563; cursor: pointer; font-size: 13px; }
+  .btn-save   { padding: 8px 24px; border: none; border-radius: 6px; background: #7c3aed; color: white; cursor: pointer; font-size: 13px; font-weight: 600; }
+  .btn-save:hover { background: #6d28d9; }
+  .btn-save:disabled { background: #c4b5fd; cursor: not-allowed; }
+
+  .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #1f2937; color: white; padding: 10px 20px; border-radius: 8px; font-size: 13px; display: none; z-index: 9999; }
+  .toast.error { background: #dc2626; }
+  .toast.success { background: #16a34a; }
+  .loading-overlay { display: none; position: fixed; inset: 0; background: rgba(255,255,255,.75); z-index: 999; align-items: center; justify-content: center; font-size: 14px; color: #6b7280; flex-direction: column; gap: 8px; }
+  .loading-overlay.visible { display: flex; }
+  .spinner { width: 28px; height: 28px; border: 3px solid #e5e7eb; border-top-color: #7c3aed; border-radius: 50%; animation: spin .7s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Buscar origen */
+  .buscar-origen { background: white; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; margin-bottom: 16px; }
+  .buscar-row { display: flex; gap: 10px; align-items: flex-end; }
+  .buscar-row input { flex: 1; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px; }
+  .buscar-row button { padding: 8px 18px; background: #7c3aed; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; white-space: nowrap; }
+  .buscar-row button:hover { background: #6d28d9; }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <div style="display:flex;align-items:center;">
+    <h2>🔄 Renovación de Contrato</h2>
+    <span class="renovacion-tag">RENOVACIÓN</span>
+  </div>
+  <span class="folio-badge" id="folio-nuevo">Cargando…</span>
+</div>
+
+<!-- Tabs -->
+<div class="tabs">
+  <div class="tab active" onclick="setTab(0)">① Contrato origen</div>
+  <div class="tab" onclick="setTab(1)" id="tab1">② Condiciones</div>
+  <div class="tab" onclick="setTab(2)" id="tab2">③ Equipo</div>
+  <div class="tab" onclick="setTab(3)" id="tab3">④ Resumen</div>
+</div>
+
+<!-- ══════════ TAB 0: BUSCAR ORIGEN ══════════ -->
+<div class="tab-content active" id="tab-0">
+  <div class="buscar-origen">
+    <div class="section-title">Buscar contrato a renovar</div>
+    <div class="buscar-row">
+      <input type="text" id="folio-buscar" placeholder="Escribe el folio del contrato anterior (Ej: 17800)"
+        onkeydown="if(event.key==='Enter') cargarOrigen()">
+      <button onclick="cargarOrigen()">🔍 Cargar contrato</button>
+    </div>
+  </div>
+
+  <div id="origen-info" style="display:none;">
+    <div class="origen-banner">
+      <div class="icon">📄</div>
+      <div class="info">
+        <strong id="orig-cliente"></strong>
+        <small id="orig-detalle"></small>
+        <small id="orig-estatus"></small>
+      </div>
+    </div>
+
+    <div class="section-title">Datos del contrato origen (solo lectura)</div>
+    <div class="form-row cols-3">
+      <div class="form-group"><label>Folio anterior</label><input type="text" id="orig-folio" readonly style="background:#f3f4f6;color:#6b7280;"></div>
+      <div class="form-group"><label>Folio raíz</label><input type="text" id="orig-raiz" readonly style="background:#f3f4f6;color:#6b7280;"></div>
+      <div class="form-group"><label>Estatus</label><input type="text" id="orig-est" readonly style="background:#f3f4f6;color:#6b7280;"></div>
+    </div>
+    <div class="form-row cols-2">
+      <div class="form-group"><label>Días renta anterior</label><input type="text" id="orig-dias" readonly style="background:#f3f4f6;color:#6b7280;"></div>
+      <div class="form-group"><label>Importe anterior</label><input type="text" id="orig-importe" readonly style="background:#f3f4f6;color:#6b7280;"></div>
+    </div>
+
+    <div style="text-align:right;margin-top:16px;">
+      <button onclick="setTab(1)" style="padding:8px 24px;background:#7c3aed;color:white;border:none;border-radius:6px;cursor:pointer;font-weight:600;">
+        Continuar → Condiciones
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ TAB 1: CONDICIONES ══════════ -->
+<div class="tab-content" id="tab-1">
+  <div class="section-title">Identificación</div>
+  <div class="form-row cols-3">
+    <div class="form-group">
+      <label>Nuevo folio *</label>
+      <input type="text" id="folio-nuevo-inp" class="heredado">
+    </div>
+    <div class="form-group">
+      <label>Fecha contrato *</label>
+      <input type="date" id="fecha-contrato">
+    </div>
+    <div class="form-group">
+      <label>Agente</label>
+      <input type="text" id="agente" class="heredado">
+    </div>
+  </div>
+
+  <div class="section-title">Cliente y obra <span style="font-weight:400;color:#9ca3af;">(heredados — editables)</span></div>
+  <div class="form-row cols-2">
+    <div class="form-group"><label>Cliente</label><input type="text" id="razon-social" class="heredado"></div>
+    <div class="form-group"><label>Obra</label><input type="text" id="obra" class="heredado"></div>
+  </div>
+  <div class="form-row cols-2">
+    <div class="form-group"><label>Ubicación de entrega</label><input type="text" id="ubicacion-entrega" class="heredado"></div>
+    <div class="form-group"><label>Quien recibe</label><input type="text" id="quien-recibe" class="heredado"></div>
+  </div>
+  <div class="form-row cols-2">
+    <div class="form-group"><label>Móvil quien recibe</label><input type="text" id="movil-recibe" class="heredado"></div>
+    <div class="form-group"><label>Medio de contacto</label><input type="text" id="medio-contacto" class="heredado"></div>
+  </div>
+
+  <div class="section-title">Condiciones de la renovación</div>
+  <div class="form-row cols-4">
+    <div class="form-group">
+      <label>Días de renta *</label>
+      <input type="number" id="dias-renta" min="1" oninput="calcVencimiento()">
+    </div>
+    <div class="form-group">
+      <label>Fecha solicitada</label>
+      <input type="date" id="fecha-solicitada">
+    </div>
+    <div class="form-group">
+      <label>Vencimiento estimado</label>
+      <input type="date" id="fecha-vencimiento" style="background:#f9fafb;">
+    </div>
+    <div class="form-group">
+      <label>Forma de pago</label>
+      <select id="forma-pago">
+        <option>Transferencia</option><option>Efectivo</option><option>Cheque</option><option>Por definir</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="section-title">Financiero</div>
+  <div class="form-row cols-4">
+    <div class="form-group"><label>Importe (con IVA)</label><input type="number" id="importe" min="0" step="0.01" class="heredado"></div>
+    <div class="form-group"><label>Anticipo</label><input type="number" id="anticipo" min="0" step="0.01"></div>
+    <div class="form-group"><label>Renta diaria</label><input type="number" id="renta-diaria" min="0" step="0.01" class="heredado"></div>
+    <div class="form-group"><label>Factura</label><input type="text" id="factura"></div>
+  </div>
+  <div class="form-row cols-4">
+    <div class="form-group"><label>Costo entrega</label><input type="number" id="costo-entrega" min="0" step="0.01"></div>
+    <div class="form-group"><label>Costo recolección</label><input type="number" id="costo-recoleccion" min="0" step="0.01"></div>
+    <div class="form-group"><label>Costo armado</label><input type="number" id="costo-armado" min="0" step="0.01"></div>
+    <div class="form-group"><label>Costo desarmado</label><input type="number" id="costo-desarmado" min="0" step="0.01"></div>
+  </div>
+
+  <div class="section-title">Notas</div>
+  <div class="form-group">
+    <textarea id="notas" rows="2" placeholder="Notas adicionales para esta renovación…" style="width:100%;padding:8px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;resize:vertical;"></textarea>
+  </div>
+</div>
+
+<!-- ══════════ TAB 2: EQUIPO ══════════ -->
+<div class="tab-content" id="tab-2">
+  <div style="background:#ede9fe;border:1px solid #c4b5fd;border-radius:6px;padding:8px 12px;font-size:12px;color:#5b21b6;margin-bottom:12px;">
+    🔄 Los SKUs heredados del contrato anterior están pre-cargados. Puedes modificar cantidades o agregar nuevos SKUs.
+  </div>
+
+  <div class="section-title">Equipo de la renovación</div>
+  <table class="items-table" id="items-table">
+    <thead>
+      <tr>
+        <th style="width:110px;">SKU</th>
+        <th>Descripción</th>
+        <th style="width:80px;">Cantidad</th>
+        <th style="width:80px;">Peso u. kg</th>
+        <th style="width:80px;">Peso total</th>
+        <th style="width:80px;">Tarifa/día</th>
+        <th style="width:70px;">Origen</th>
+        <th style="width:30px;"></th>
+      </tr>
+    </thead>
+    <tbody id="items-body"></tbody>
+  </table>
+  <button class="add-row-btn" onclick="agregarFila()">+ Agregar SKU adicional</button>
+
+  <div class="totales-bar">
+    <div class="total-item"><div class="val" id="tot-piezas">0</div><div class="lbl">PIEZAS</div></div>
+    <div class="total-item"><div class="val" id="tot-peso">0.00</div><div class="lbl">PESO KG</div></div>
+    <div class="total-item"><div class="val" id="tot-skus">0</div><div class="lbl">SKUs</div></div>
+  </div>
+</div>
+
+<!-- ══════════ TAB 3: RESUMEN ══════════ -->
+<div class="tab-content" id="tab-3">
+  <div class="section-title">Resumen de la renovación</div>
+  <div class="resumen-box" id="resumen-box">
+    Completa los tabs anteriores para ver el resumen.
+  </div>
+
+  <div style="background:#fef9c3;border:1px solid #fcd34d;border-radius:6px;padding:10px 14px;font-size:12px;color:#92400e;margin-bottom:12px;">
+    ⚠ Al guardar: el contrato <strong id="folio-ant-warn"></strong> cambiará automáticamente a estatus <strong>RENOVACION</strong> y se creará el nuevo contrato.
+  </div>
+</div>
+
+<!-- Footer -->
+<div class="footer-btns">
+  <button class="btn-cancel" onclick="google.script.host.close()">Cancelar</button>
+  <button class="btn-save" id="btn-guardar" onclick="guardar()" disabled>🔄 Guardar Renovación</button>
+</div>
+
+<div class="toast" id="toast"></div>
+<div class="loading-overlay" id="loading-overlay">
+  <div class="spinner"></div>
+  <span>Guardando renovación…</span>
+</div>
+
+<script>
+// ── ESTADO ──────────────────────────────────────────────────────
+var _contratoOrigen = null;
+var _itemsOrigen    = [];
+var _productos      = [];
+var _itemCounter    = 0;
+var _ignorarBlur    = false;
+
+// ── INIT ────────────────────────────────────────────────────────
+window.onload = function() {
+  var hoy = new Date();
+  var yyyy = hoy.getFullYear();
+  var mm   = String(hoy.getMonth()+1).padStart(2,'0');
+  var dd   = String(hoy.getDate()).padStart(2,'0');
+  var hoyStr = yyyy+'-'+mm+'-'+dd;
+
+  document.getElementById('fecha-contrato').value   = hoyStr;
+  document.getElementById('fecha-solicitada').value = hoyStr;
+
+  // Cargar productos para autocomplete
+  google.script.run
+    .withSuccessHandler(function(data) { _productos = data || []; })
+    .getProductos();
+
+  // Leer folio pendiente — si viene del botón Renovar en Seguimiento, carga automático
+  google.script.run
+    .withSuccessHandler(function(folio) {
+      if (folio) {
+        document.getElementById('folio-buscar').value = folio;
+        cargarOrigen();
+      }
+    })
+    .getFolioRenovacionPendiente();
+};
+
+// ── TABS ────────────────────────────────────────────────────────
+function setTab(n) {
+  document.querySelectorAll('.tab').forEach(function(t,i) { t.classList.toggle('active', i===n); });
+  document.querySelectorAll('.tab-content').forEach(function(t,i) { t.classList.toggle('active', i===n); });
+  if (n === 3) actualizarResumen();
+}
+
+// ── CARGAR ORIGEN ────────────────────────────────────────────────
+function cargarOrigen() {
+  var folio = document.getElementById('folio-buscar').value.trim();
+  if (!folio) { showToast('Escribe el folio del contrato a renovar', true); return; }
+
+  mostrarLoading(true);
+  google.script.run
+    .withSuccessHandler(function(res) {
+      mostrarLoading(false);
+      if (!res || !res.contrato) { showToast('Contrato no encontrado: ' + folio, true); return; }
+      _contratoOrigen = res.contrato;
+      _itemsOrigen    = res.items || [];
+      poblarFormulario(res);
+    })
+    .withFailureHandler(function(e) {
+      mostrarLoading(false);
+      showToast('Error: ' + e.message, true);
+    })
+    .getDatosParaRenovacion(folio);
+}
+
+function poblarFormulario(res) {
+  var c = res.contrato;
+
+  // Mostrar info origen
+  document.getElementById('origen-info').style.display = '';
+  document.getElementById('orig-cliente').textContent  = c.razon_social + ' — ' + c.obra;
+  document.getElementById('orig-detalle').textContent  = 'Ubicación: ' + (c.ubicacion_entrega || '—') + ' · Agente: ' + (c.agente || '—');
+  document.getElementById('orig-estatus').textContent  = 'Estatus actual: ' + c.estatus + ' · ' + c.dias_renta + ' días · $' + parseFloat(c.importe||0).toFixed(2);
+  document.getElementById('orig-folio').value   = c.folio_c;
+  document.getElementById('orig-raiz').value    = c.folio_raiz;
+  document.getElementById('orig-est').value     = c.estatus;
+  document.getElementById('orig-dias').value    = c.dias_renta;
+  document.getElementById('orig-importe').value = '$' + parseFloat(c.importe||0).toFixed(2);
+
+  // Folio nuevo
+  document.getElementById('folio-nuevo').textContent    = res.siguiente_folio;
+  document.getElementById('folio-nuevo-inp').value      = res.siguiente_folio;
+  document.getElementById('folio-ant-warn').textContent = c.folio_c;
+
+  // Heredar campos
+  document.getElementById('agente').value          = c.agente || '';
+  document.getElementById('razon-social').value    = c.razon_social || '';
+  document.getElementById('obra').value            = c.obra || '';
+  document.getElementById('ubicacion-entrega').value = c.ubicacion_entrega || '';
+  document.getElementById('quien-recibe').value    = c.quien_recibe || '';
+  document.getElementById('movil-recibe').value    = c.movil_recibe || '';
+  document.getElementById('medio-contacto').value  = c.medio_contacto || '';
+  document.getElementById('dias-renta').value      = c.dias_renta || 30;
+  document.getElementById('importe').value         = parseFloat(c.importe || 0);
+  document.getElementById('renta-diaria').value    = parseFloat(c.renta_diaria || 0);
+  document.getElementById('forma-pago').value      = c.forma_pago || 'Transferencia';
+  document.getElementById('costo-entrega').value   = parseFloat(c.costo_entrega || 0);
+  document.getElementById('costo-recoleccion').value = parseFloat(c.costo_recoleccion || 0);
+  document.getElementById('costo-armado').value    = parseFloat(c.costo_armado || 0);
+  document.getElementById('costo-desarmado').value = parseFloat(c.costo_desarmado || 0);
+
+  calcVencimiento();
+
+  // Cargar items heredados
+  document.getElementById('items-body').innerHTML = '';
+  _itemCounter = 0;
+  (_itemsOrigen || []).forEach(function(item) {
+    agregarFila(item.sku, item.descripcion, item.cantidad, item.peso_unitario_kg, item.tarifa_dia, true);
+  });
+
+  document.getElementById('btn-guardar').disabled = false;
+}
+
+// ── VENCIMIENTO AUTO ─────────────────────────────────────────────
+function calcVencimiento() {
+  var fecha = document.getElementById('fecha-contrato').value;
+  var dias  = parseInt(document.getElementById('dias-renta').value) || 0;
+  if (!fecha || !dias) return;
+  var d = new Date(fecha + 'T12:00:00');
+  d.setDate(d.getDate() + dias);
+  document.getElementById('fecha-vencimiento').value = d.toISOString().slice(0,10);
+}
+document.addEventListener('change', function(e) {
+  if (e.target.id === 'fecha-contrato' || e.target.id === 'dias-renta') calcVencimiento();
+});
+
+// ── ITEMS TABLE ──────────────────────────────────────────────────
+function agregarFila(sku, desc, qty, pesoU, tarifaDia, esHeredado) {
+  var n  = ++_itemCounter;
+  var tr = document.createElement('tr');
+  tr.id  = 'irow-'+n;
+
+  var skuCell = document.createElement('td');
+  skuCell.style.position = 'relative';
+  skuCell.innerHTML =
+    '<div class="sku-wrapper">'
+    +'<input type="text" id="isku-'+n+'" value="'+(sku||'')+'" autocomplete="off"'
+    +' style="width:108px;padding:4px 6px;border:1px solid #d1d5db;border-radius:4px;font-family:monospace;font-size:11px;"'
+    +' placeholder="SKU" oninput="skuSuggest('+n+',this.value)" onblur="skuBlur('+n+')">'
+    +'<div class="sku-dropdown" id="isku-list-'+n+'"></div>'
+    +'</div>';
+
+  tr.innerHTML =
+    '<td></td>'
+    +'<td><input type="text" id="idesc-'+n+'" value="'+(desc||'')+'" style="width:100%;padding:4px 6px;border:1px solid #d1d5db;border-radius:4px;font-size:11px;"></td>'
+    +'<td><input type="number" id="iqty-'+n+'" value="'+(qty||0)+'" min="0" step="1" oninput="calcRow('+n+')"></td>'
+    +'<td><input type="number" id="ipesou-'+n+'" value="'+(pesoU||0)+'" min="0" step="0.001" oninput="calcRow('+n+')" style="width:75px;padding:4px 6px;border:1px solid #d1d5db;border-radius:4px;font-size:12px;text-align:center;"></td>'
+    +'<td style="text-align:center;font-family:monospace;" id="ipesot-'+n+'">0.00</td>'
+    +'<td><input type="number" id="itarifa-'+n+'" value="'+(tarifaDia||0)+'" min="0" step="0.01" style="width:75px;padding:4px 6px;border:1px solid #d1d5db;border-radius:4px;font-size:12px;text-align:center;"></td>'
+    +'<td style="text-align:center;">'+(esHeredado ? '<span class="heredado-badge">heredado</span>' : '<span class="nuevo-badge">nuevo</span>')+'</td>'
+    +'<td><button onclick="eliminarFila('+n+')" style="background:none;border:none;cursor:pointer;color:#ef4444;font-size:14px;padding:2px 4px;">×</button></td>';
+
+  tr.cells[0].replaceWith(skuCell);
+  document.getElementById('items-body').appendChild(tr);
+  calcRow(n);
+}
+
+function calcRow(n) {
+  var qty  = parseFloat(document.getElementById('iqty-'+n)?.value)   || 0;
+  var pukg = parseFloat(document.getElementById('ipesou-'+n)?.value) || 0;
+  var cel  = document.getElementById('ipesot-'+n);
+  if (cel) cel.textContent = (qty * pukg).toFixed(2);
+  actualizarTotales();
+}
+
+function eliminarFila(n) {
+  var row = document.getElementById('irow-'+n);
+  if (row) row.remove();
+  actualizarTotales();
+}
+
+function actualizarTotales() {
+  var rows = document.querySelectorAll('#items-body tr');
+  var totalPiezas = 0, totalPeso = 0, skus = new Set();
+  rows.forEach(function(row) {
+    var n = row.id.replace('irow-','');
+    var sku = document.getElementById('isku-'+n)?.value || '';
+    var qty = parseFloat(document.getElementById('iqty-'+n)?.value) || 0;
+    var pt  = parseFloat(document.getElementById('ipesot-'+n)?.textContent) || 0;
+    if (sku) skus.add(sku);
+    totalPiezas += qty;
+    totalPeso   += pt;
+  });
+  document.getElementById('tot-piezas').textContent = totalPiezas.toFixed(0);
+  document.getElementById('tot-peso').textContent   = totalPeso.toFixed(2);
+  document.getElementById('tot-skus').textContent   = skus.size;
+}
+
+// ── SKU AUTOCOMPLETE ─────────────────────────────────────────────
+function skuSuggest(n, val) {
+  var list = document.getElementById('isku-list-'+n);
+  if (!val) { list.style.display = 'none'; return; }
+  var hits = _productos.filter(function(p) {
+    return p.sku.toLowerCase().includes(val.toLowerCase())
+      || p.descripcion.toLowerCase().includes(val.toLowerCase());
+  }).slice(0,8);
+  if (!hits.length) { list.style.display = 'none'; return; }
+  list.innerHTML = hits.map(function(p,i) {
+    return '<div class="sku-option" data-idx="'+i+'">'
+      +'<strong style="font-family:monospace;">'+p.sku+'</strong> — '+p.descripcion
+      +' <span style="float:right;color:#9ca3af;">'+p.peso_unitario_kg+' kg</span></div>';
+  }).join('');
+  list._hits = hits;
+  list.style.display = 'block';
+  list.onmousedown = function(e) {
+    _ignorarBlur = true;
+    var item = e.target.closest('[data-idx]');
+    if (!item) return;
+    var prod = hits[parseInt(item.getAttribute('data-idx'))];
+    document.getElementById('isku-'+n).value   = prod.sku;
+    document.getElementById('idesc-'+n).value  = prod.descripcion;
+    document.getElementById('ipesou-'+n).value = prod.peso_unitario_kg;
+    list.style.display = 'none';
+    calcRow(n);
+  };
+}
+function skuBlur(n) {
+  if (_ignorarBlur) { _ignorarBlur = false; return; }
+  var list = document.getElementById('isku-list-'+n);
+  if (list) list.style.display = 'none';
+}
+
+// ── RESUMEN ──────────────────────────────────────────────────────
+function actualizarResumen() {
+  if (!_contratoOrigen) return;
+  var rows  = document.querySelectorAll('#items-body tr');
+  var lineas = [];
+  rows.forEach(function(row) {
+    var n   = row.id.replace('irow-','');
+    var sku = document.getElementById('isku-'+n)?.value || '';
+    var qty = parseFloat(document.getElementById('iqty-'+n)?.value) || 0;
+    if (sku && qty > 0) lineas.push('• '+sku+' × '+qty);
+  });
+
+  var imp  = parseFloat(document.getElementById('importe').value) || 0;
+  var ant  = parseFloat(document.getElementById('anticipo').value) || 0;
+  var dias = document.getElementById('dias-renta').value;
+  var vence = document.getElementById('fecha-vencimiento').value;
+
+  document.getElementById('resumen-box').innerHTML =
+    '<div class="resumen-row"><span class="lbl">Folio anterior</span><span class="val">'+_contratoOrigen.folio_c+'</span></div>'
+    +'<div class="resumen-row"><span class="lbl">Nuevo folio</span><span class="val">'+document.getElementById('folio-nuevo-inp').value+'</span></div>'
+    +'<div class="resumen-row"><span class="lbl">Folio raíz</span><span class="val">'+_contratoOrigen.folio_raiz+'</span></div>'
+    +'<div class="resumen-row"><span class="lbl">Cliente</span><span class="val">'+document.getElementById('razon-social').value+'</span></div>'
+    +'<div class="resumen-row"><span class="lbl">Obra</span><span class="val">'+document.getElementById('obra').value+'</span></div>'
+    +'<div class="resumen-row"><span class="lbl">Días de renta</span><span class="val">'+dias+' días · vence '+vence+'</span></div>'
+    +'<div class="resumen-row"><span class="lbl">Importe</span><span class="val">$'+imp.toFixed(2)+'</span></div>'
+    +'<div class="resumen-row"><span class="lbl">Anticipo</span><span class="val">$'+ant.toFixed(2)+'</span></div>'
+    +'<div class="resumen-row total"><span class="lbl">Saldo pendiente</span><span class="val">$'+(imp-ant).toFixed(2)+'</span></div>'
+    +'<div class="resumen-row"><span class="lbl">Equipo ('+lineas.length+' SKUs)</span><span class="val" style="font-size:11px;color:#6b7280;">'+lineas.join(' · ')+'</span></div>';
+}
+
+// ── GUARDAR ──────────────────────────────────────────────────────
+function guardar() {
+  if (!_contratoOrigen) { showToast('Carga un contrato origen primero', true); return; }
+
+  var rows  = document.querySelectorAll('#items-body tr');
+  var items = [];
+  rows.forEach(function(row) {
+    var n    = row.id.replace('irow-','');
+    var sku  = document.getElementById('isku-'+n)?.value || '';
+    var qty  = parseFloat(document.getElementById('iqty-'+n)?.value) || 0;
+    var pu   = parseFloat(document.getElementById('ipesou-'+n)?.value) || 0;
+    var tar  = parseFloat(document.getElementById('itarifa-'+n)?.value) || 0;
+    var desc = document.getElementById('idesc-'+n)?.value || '';
+    if (sku && qty > 0) {
+      items.push({ sku: sku, descripcion: desc, cantidad: qty, peso_unitario_kg: pu, peso_total_kg: qty*pu, tarifa_dia: tar, unidad_medida: 'PZA' });
+    }
+  });
+
+  if (!items.length) { showToast('Agrega al menos un SKU con cantidad', true); return; }
+
+  var folio = document.getElementById('folio-nuevo-inp').value.trim();
+  if (!folio) { showToast('El nuevo folio es obligatorio', true); return; }
+
+  var payload = {
+    folio_c           : folio,
+    renta_anterior    : _contratoOrigen.folio_c,
+    cliente_id        : _contratoOrigen.cliente_id || '',
+    razon_social      : document.getElementById('razon-social').value,
+    obra              : document.getElementById('obra').value,
+    ubicacion_entrega : document.getElementById('ubicacion-entrega').value,
+    quien_recibe      : document.getElementById('quien-recibe').value,
+    movil_recibe      : document.getElementById('movil-recibe').value,
+    medio_contacto    : document.getElementById('medio-contacto').value,
+    agente            : document.getElementById('agente').value,
+    dias_renta        : document.getElementById('dias-renta').value,
+    fecha_contrato    : document.getElementById('fecha-contrato').value,
+    fecha_solicitada  : document.getElementById('fecha-solicitada').value,
+    importe           : document.getElementById('importe').value,
+    anticipo          : document.getElementById('anticipo').value,
+    renta_diaria      : document.getElementById('renta-diaria').value,
+    forma_pago        : document.getElementById('forma-pago').value,
+    factura           : document.getElementById('factura').value,
+    costo_entrega     : document.getElementById('costo-entrega').value,
+    costo_recoleccion : document.getElementById('costo-recoleccion').value,
+    costo_armado      : document.getElementById('costo-armado').value,
+    costo_desarmado   : document.getElementById('costo-desarmado').value,
+    pagare_lugar      : _contratoOrigen.pagare_lugar || 'Toluca, Estado de México',
+    notas             : document.getElementById('notas').value,
+    items             : items,
+  };
+
+  mostrarLoading(true);
+  document.getElementById('btn-guardar').disabled = true;
+
+  google.script.run
+    .withSuccessHandler(function(res) {
+      mostrarLoading(false);
+      showToast('✅ Renovación '+res.folio+' guardada. Contrato anterior → RENOVACION', false);
+      setTimeout(function() { google.script.host.close(); }, 2000);
+    })
+    .withFailureHandler(function(e) {
+      mostrarLoading(false);
+      document.getElementById('btn-guardar').disabled = false;
+      showToast('Error: '+e.message, true);
+    })
+    .guardarRenovacion(payload);
+}
+
+// ── UTILS ────────────────────────────────────────────────────────
+function showToast(msg, isError) {
+  var t = document.getElementById('toast');
+  t.textContent   = msg;
+  t.className     = 'toast' + (isError ? ' error' : ' success');
+  t.style.display = 'block';
+  setTimeout(function() { t.style.display = 'none'; }, 3500);
+}
+function mostrarLoading(v) {
+  document.getElementById('loading-overlay').classList.toggle('visible', v);
+}
+</script>
+</body>
+</html>

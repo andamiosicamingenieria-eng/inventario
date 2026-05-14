@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap');
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #f5f6fa; --surface: #ffffff; --surface2: #f0f2f7;
+    --border: #d1d5e0; --accent: #2563eb; --accent2: #059669;
+    --text: #111827; --text-muted: #6b7280; --text-dim: #374151;
+    --mono: 'DM Mono', monospace; --sans: 'DM Sans', sans-serif;
+    --verde: #dcfce7; --verde-text: #166534;
+    --amarillo: #fef9c3; --amarillo-text: #854d0e;
+    --azul: #dbeafe; --azul-text: #1e40af;
+    --rojo: #fee2e2; --rojo-text: #991b1b;
+    --gris: #f3f4f6; --gris-text: #374151;
+  }
+  body { font-family: var(--sans); font-size: 13px; background: var(--bg); color: var(--text); padding: 16px; min-width: 900px; }
+
+  .tabs { display: flex; gap: 4px; margin-bottom: 16px; border-bottom: 2px solid var(--border); }
+  .tab-btn {
+    padding: 8px 20px; font-size: 13px; font-weight: 600; border: none;
+    background: transparent; cursor: pointer; color: var(--text-muted);
+    border-bottom: 3px solid transparent; margin-bottom: -2px;
+    border-radius: 6px 6px 0 0; transition: all .15s;
+  }
+  .tab-btn:hover { background: var(--surface2); color: var(--text); }
+  .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); background: var(--surface); }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  .seccion { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; margin-bottom: 16px; overflow: hidden; }
+  .seccion-header { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: var(--surface2); border-bottom: 1px solid var(--border); }
+  .seccion-titulo { font-weight: 700; font-size: 13px; color: var(--text); display: flex; align-items: center; gap: 8px; }
+  .badge-count { background: var(--accent); color: #fff; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 10px; font-family: var(--mono); }
+  .seccion-subtitulo { font-size: 11px; color: var(--text-muted); }
+
+  .tabla-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  thead th { padding: 7px 10px; text-align: left; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text-muted); background: var(--gris); border-bottom: 1px solid var(--border); white-space: nowrap; }
+  tbody tr { border-bottom: 1px solid var(--border); transition: background .1s; }
+  tbody tr:hover { background: #f8faff; }
+  tbody td { padding: 8px 10px; vertical-align: middle; }
+  .empty-row td { text-align: center; color: var(--text-muted); padding: 20px; font-style: italic; }
+
+  .chip { display: inline-block; font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 10px; white-space: nowrap; }
+  .chip-activo   { background: var(--azul);    color: var(--azul-text); }
+  .chip-parcial  { background: var(--amarillo); color: var(--amarillo-text); }
+  .chip-recolect { background: var(--verde);    color: var(--verde-text); }
+  .chip-cancelado{ background: var(--rojo);     color: var(--rojo-text); }
+  .chip-venta    { background: #ede9fe;         color: #5b21b6; }
+
+  .dias-chip { display: inline-block; font-family: var(--mono); font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 6px; white-space: nowrap; }
+  .dias-vencido { background: var(--rojo);    color: var(--rojo-text); }
+  .dias-urgente { background: var(--amarillo);color: var(--amarillo-text); }
+  .dias-ok      { background: var(--verde);   color: var(--verde-text); }
+  .dias-neutro  { background: var(--gris);    color: var(--gris-text); }
+
+  .progress-wrap { display: flex; align-items: center; gap: 6px; }
+  .progress-bar  { flex: 1; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; min-width: 60px; }
+  .progress-fill { height: 100%; background: var(--accent); border-radius: 3px; }
+  .progress-pct  { font-family: var(--mono); font-size: 10px; font-weight: 700; color: var(--text-muted); min-width: 32px; }
+
+  .btn-accion { font-size: 10px; font-weight: 600; padding: 4px 8px; border-radius: 5px; border: 1px solid var(--border); background: var(--surface); cursor: pointer; color: var(--text-dim); margin-right: 3px; transition: all .15s; white-space: nowrap; }
+  .btn-accion:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-renovar { border-color: #7c3aed; color: #7c3aed; }
+  .btn-renovar:hover { background: #f5f3ff; }
+  .btn-ec { border-color: var(--accent2); color: var(--accent2); }
+  .btn-ec:hover { background: var(--verde); }
+
+  .loading { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 32px; color: var(--text-muted); }
+  .spinner { width: 18px; height: 18px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin .7s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .folio-mono { font-family: var(--mono); font-size: 11px; font-weight: 600; color: var(--accent); }
+  .text-sm    { font-size: 11px; color: var(--text-muted); }
+  .text-bold  { font-weight: 600; }
+</style>
+</head>
+<body>
+
+<div class="tabs">
+  <button class="tab-btn active" onclick="cambiarTab('renta')">🏗 Renta</button>
+  <button class="tab-btn"        onclick="cambiarTab('venta')">🛒 Venta</button>
+</div>
+
+<!-- TAB RENTA -->
+<div id="tab-renta" class="tab-panel active">
+  <div class="seccion">
+    <div class="seccion-header">
+      <div class="seccion-titulo">Contratos Activos <span class="badge-count" id="badge-activos">—</span></div>
+      <div class="seccion-subtitulo">Ordenados: más atrasados primero</div>
+    </div>
+    <div id="wrap-activos" class="loading"><div class="spinner"></div> Cargando…</div>
+  </div>
+  <div class="seccion">
+    <div class="seccion-header">
+      <div class="seccion-titulo">Últimas Recolecciones <span class="badge-count" id="badge-recolect">—</span></div>
+      <div class="seccion-subtitulo">Últimos 10 contratos completados</div>
+    </div>
+    <div id="wrap-recolect" class="loading"><div class="spinner"></div> Cargando…</div>
+  </div>
+</div>
+
+<!-- TAB VENTA -->
+<div id="tab-venta" class="tab-panel">
+  <div class="seccion">
+    <div class="seccion-header">
+      <div class="seccion-titulo">Ventas en Proceso <span class="badge-count" id="badge-ventas-pend">—</span></div>
+      <div class="seccion-subtitulo">Pedidos con entrega incompleta</div>
+    </div>
+    <div id="wrap-ventas-pend" class="loading"><div class="spinner"></div> Cargando…</div>
+  </div>
+  <div class="seccion">
+    <div class="seccion-header">
+      <div class="seccion-titulo">Últimas Ventas Completadas <span class="badge-count" id="badge-ventas-comp">—</span></div>
+      <div class="seccion-subtitulo">Últimas 10 — días desde contrato hasta entrega total</div>
+    </div>
+    <div id="wrap-ventas-comp" class="loading"><div class="spinner"></div> Cargando…</div>
+  </div>
+</div>
+
+<script>
+function cambiarTab(tab) {
+  document.querySelectorAll('.tab-btn').forEach(function(b, i) {
+    b.classList.toggle('active', (i===0&&tab==='renta')||(i===1&&tab==='venta'));
+  });
+  document.getElementById('tab-renta').classList.toggle('active', tab==='renta');
+  document.getElementById('tab-venta').classList.toggle('active', tab==='venta');
+}
+
+function chipEstatus(est) {
+  var mapa = { 'ACTIVO':'chip-activo','ENTREGA PARCIAL':'chip-parcial','RECOLECTADO':'chip-recolect','CANCELADO':'chip-cancelado','VENTA':'chip-venta' };
+  return '<span class="chip ' + (mapa[est]||'chip-activo') + '">' + est + '</span>';
+}
+
+function chipDias(dias) {
+  if (dias===null||dias===undefined||dias==='') return '<span class="dias-chip dias-neutro">—</span>';
+  var n=parseInt(dias);
+  var cls = n<0?'dias-vencido':n<=5?'dias-urgente':'dias-ok';
+  var txt = n<0?(Math.abs(n)+'d vencido'):n===0?'Vence hoy':(n+'d restantes');
+  return '<span class="dias-chip '+cls+'">'+txt+'</span>';
+}
+
+function barraProgreso(pct,ent,tot) {
+  var p=Math.min(100,Math.max(0,pct||0));
+  return '<div class="progress-wrap">'
+    +'<div class="progress-bar"><div class="progress-fill" style="width:'+p+'%"></div></div>'
+    +'<span class="progress-pct">'+p+'%</span>'
+    +'<span class="text-sm">('+( ent||0)+'/'+( tot||0)+')</span></div>';
+}
+
+function renderRentasActivas(lista) {
+  document.getElementById('badge-activos').textContent = lista.length;
+  var wrap = document.getElementById('wrap-activos');
+  if (!lista.length) { wrap.innerHTML='<table><tbody><tr class="empty-row"><td colspan="9">Sin contratos activos</td></tr></tbody></table>'; return; }
+  var h = '<div class="tabla-wrap"><table><thead><tr>'
+    +'<th>Folio</th><th>Cliente</th><th>Obra / Ubicación</th>'
+    +'<th>Agente</th><th>Inicio</th><th>Vence</th>'
+    +'<th>Días</th><th>Estatus</th><th>Acciones</th>'
+    +'</tr></thead><tbody>';
+  lista.forEach(function(c) {
+    h+='<tr>'
+      +'<td><span class="folio-mono">'+c.folio_c+'</span>'+(c.renta_anterior?'<br><span class="text-sm">↩ '+c.renta_anterior+'</span>':'')+'</td>'
+      +'<td class="text-bold">'+c.razon_social+'</td>'
+      +'<td class="text-sm">'+(c.obra||c.ubicacion||'—')+'</td>'
+      +'<td class="text-sm">'+(c.agente||'—')+'</td>'
+      +'<td class="text-sm">'+(c.fecha_inicio||'—')+'</td>'
+      +'<td class="text-sm">'+(c.fecha_vence||'—')+'</td>'
+      +'<td>'+chipDias(c.dias_restantes)+'</td>'
+      +'<td>'+chipEstatus(c.estatus)+'</td>'
+      +'<td>'
+      +'<button class="btn-accion" onclick="abrirHS(\''+c.folio_c+'\')">+ HS</button>'
+      +'<button class="btn-accion" onclick="abrirHE(\''+c.folio_c+'\')">+ HE</button>'
+      +'<button class="btn-accion btn-renovar" onclick="renovarContrato(\''+c.folio_c+'\')">🔄</button>'
+      +'<button class="btn-accion btn-ec" onclick="verEC(\''+(c.folio_raiz||c.folio_c)+'\')">EC</button>'
+      +'<button class="btn-accion" style="border-color:#d97706;color:#d97706;" onclick="abrirPagos(\''+c.folio_c+'\',\''+c.razon_social.replace(/'/g,'')+'\')">💰</button>'
+      +'</td></tr>';
+  });
+  wrap.innerHTML = h+'</tbody></table></div>';
+}
+
+function renderRentasCompletadas(lista) {
+  document.getElementById('badge-recolect').textContent = lista.length;
+  var wrap = document.getElementById('wrap-recolect');
+  if (!lista.length) { wrap.innerHTML='<table><tbody><tr class="empty-row"><td colspan="7">Sin recolecciones recientes</td></tr></tbody></table>'; return; }
+  var h='<div class="tabla-wrap"><table><thead><tr>'
+    +'<th>Folio</th><th>Cliente</th><th>Obra</th>'
+    +'<th>Agente</th><th>Inicio</th><th>Vencía</th><th>Estatus</th>'
+    +'</tr></thead><tbody>';
+  lista.forEach(function(c) {
+    h+='<tr>'
+      +'<td><span class="folio-mono">'+c.folio_c+'</span></td>'
+      +'<td class="text-bold">'+c.razon_social+'</td>'
+      +'<td class="text-sm">'+(c.obra||'—')+'</td>'
+      +'<td class="text-sm">'+(c.agente||'—')+'</td>'
+      +'<td class="text-sm">'+(c.fecha_inicio||'—')+'</td>'
+      +'<td class="text-sm">'+(c.fecha_vence||'—')+'</td>'
+      +'<td>'+chipEstatus(c.estatus)+'</td>'
+      +'</tr>';
+  });
+  wrap.innerHTML=h+'</tbody></table></div>';
+}
+
+function renderVentasPendientes(lista) {
+  document.getElementById('badge-ventas-pend').textContent = lista.length;
+  var wrap = document.getElementById('wrap-ventas-pend');
+  if (!lista.length) { wrap.innerHTML='<table><tbody><tr class="empty-row"><td colspan="8">Sin ventas en proceso</td></tr></tbody></table>'; return; }
+  var h='<div class="tabla-wrap"><table><thead><tr>'
+    +'<th>Folio</th><th>Cliente</th><th>Obra</th>'
+    +'<th>Agente</th><th>Fecha</th><th>Avance entrega</th><th>Estatus</th><th>Acciones</th>'
+    +'</tr></thead><tbody>';
+  lista.forEach(function(c) {
+    h+='<tr>'
+      +'<td><span class="folio-mono">'+c.folio_c+'</span></td>'
+      +'<td class="text-bold">'+c.razon_social+'</td>'
+      +'<td class="text-sm">'+(c.obra||'—')+'</td>'
+      +'<td class="text-sm">'+(c.agente||'—')+'</td>'
+      +'<td class="text-sm">'+(c.fecha_contrato||'—')+'</td>'
+      +'<td>'+barraProgreso(c.pct_entregado,c.total_entregado,c.total_contrato)+'</td>'
+      +'<td>'+chipEstatus(c.estatus)+'</td>'
+      +'<td>'
+      +'<button class="btn-accion" onclick="abrirHS(\''+c.folio_c+'\')">+ HS</button>'
+      +'<button class="btn-accion btn-ec" onclick="verEC(\''+(c.folio_raiz||c.folio_c)+'\')">EC</button>'
+      +'</td></tr>';
+  });
+  wrap.innerHTML=h+'</tbody></table></div>';
+}
+
+function renderVentasCompletadas(lista) {
+  document.getElementById('badge-ventas-comp').textContent = lista.length;
+  var wrap = document.getElementById('wrap-ventas-comp');
+  if (!lista.length) { wrap.innerHTML='<table><tbody><tr class="empty-row"><td colspan="7">Sin ventas completadas</td></tr></tbody></table>'; return; }
+  var h='<div class="tabla-wrap"><table><thead><tr>'
+    +'<th>Folio</th><th>Cliente</th><th>Obra</th>'
+    +'<th>Agente</th><th>Fecha contrato</th><th>Última HS</th><th>Ciclo</th>'
+    +'</tr></thead><tbody>';
+  lista.forEach(function(c) {
+    var ciclo = (c.dias_ciclo!==null&&c.dias_ciclo!==undefined)
+      ? '<span class="dias-chip dias-neutro">'+c.dias_ciclo+' días</span>'
+      : '<span class="text-sm">—</span>';
+    h+='<tr>'
+      +'<td><span class="folio-mono">'+c.folio_c+'</span></td>'
+      +'<td class="text-bold">'+c.razon_social+'</td>'
+      +'<td class="text-sm">'+(c.obra||'—')+'</td>'
+      +'<td class="text-sm">'+(c.agente||'—')+'</td>'
+      +'<td class="text-sm">'+(c.fecha_contrato||'—')+'</td>'
+      +'<td class="text-sm">'+(c.fecha_ultima_hs||'—')+'</td>'
+      +'<td>'+ciclo+'</td>'
+      +'</tr>';
+  });
+  wrap.innerHTML=h+'</tbody></table></div>';
+}
+
+function abrirHS(folioC)        { google.script.run.abrirPanelHS(folioC); }
+function abrirHE(folioC)        { google.script.run.abrirPanelHE(folioC); }
+function renovarContrato(folioC){ google.script.run.abrirPanelRenovacion(folioC); }
+function abrirPagos(folioC, cliente) { google.script.run.abrirPanelPagos(folioC, cliente); }
+function verEC(folioRaiz) {
+  google.script.run
+    .withSuccessHandler(function(){ google.script.host.close(); })
+    .withFailureHandler(function(e){ alert('Error: '+e.message); })
+    .generarEstadoCuenta(folioRaiz);
+}
+
+window.onload = function() {
+  google.script.run
+    .withSuccessHandler(function(d) {
+      renderRentasActivas(d.rentasActivas||[]);
+      renderRentasCompletadas(d.rentasCompletadas||[]);
+      renderVentasPendientes(d.ventasPendientes||[]);
+      renderVentasCompletadas(d.ventasCompletadas||[]);
+    })
+    .withFailureHandler(function(e) {
+      document.getElementById('wrap-activos').innerHTML =
+        '<div style="padding:20px;color:#dc2626;">Error: '+e.message+'</div>';
+    })
+    .getDatosSeguimiento();
+};
+</script>
+</body>
+</html>

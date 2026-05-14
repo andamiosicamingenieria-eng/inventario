@@ -1,0 +1,4 @@
+analiza el avance y revisa los archivos que subir a la carpeta amtecedente:
+- 'contratos.txt' : script de visual bascis donde actualmente se llena y  se imprime el contrato, usalo para mapear 
+- 'contrato_plantilla' : la usaremoc como plantilla, es lo que requiero que tenga un contrato en pdf
+- 'hs_plantilla.pdf': servira de plantilla para las HE y HE, este archivo se puede modificar si es necesario.
