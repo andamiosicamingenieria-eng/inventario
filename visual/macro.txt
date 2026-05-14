@@ -1,0 +1,696 @@
+' =====================================================================
+' SCRIPT INTEGRADO CON SUPABASE
+' Ubicación: Hoja "CONTRATO" → boton_Click
+'
+' NUEVAS CAPACIDADES:
+'   ✓ Inserta datos en tabla "contratos" de Supabase
+'   ✓ Inserta productos (una fila por SKU) en tabla "contratos_items"
+'   ✓ Mantiene funcionalidad Excel original (local + remoto)
+'   ✓ Manejo de errores HTTP
+'   ✓ Validación de respuestas JSON
+'
+' REQUISITOS:
+'   ✓ Librería MSXML3 (Reference: Microsoft XML, v3.0)
+'   ✓ Credenciales Supabase (URL + API KEY)
+' =====================================================================
+
+Private Sub boton_Click()
+
+    ' -----------------------------------------------------------------
+    ' AJUSTA ESTAS RUTAS SEGÚN TU EQUIPO
+    ' -----------------------------------------------------------------
+    Dim RutaGeneral  As String
+    Dim RutaV1       As String
+    Dim RutaV2       As String
+    Dim RutaV3       As String
+    Dim RutaV4       As String
+    Dim RutaV5       As String
+    Dim RutaV6       As String
+    Dim RutaV7       As String
+    Dim RutaV8       As String
+
+    RutaGeneral = "G:\.shortcut-targets-by-id\1M52sd_Ql6bwrWoegELuWJbM18alQlx8F\1.3.- REVISOR DE CONTRATOS\1.- CONTRATOS\"
+    RutaV1 = "G:\.shortcut-targets-by-id\1M52sd_Ql6bwrWoegELuWJbM18alQlx8F\1.3.- REVISOR DE CONTRATOS\CONTRATOS V1 YAKIN\"
+    RutaV2 = "G:\.shortcut-targets-by-id\1M52sd_Ql6bwrWoegELuWJbM18alQlx8F\1.3.- REVISOR DE CONTRATOS\CONTRATOS V2 FA\"
+    RutaV3 = "G:\.shortcut-targets-by-id\1M52sd_Ql6bwrWoegELuWJbM18alQlx8F\1.3.- REVISOR DE CONTRATOS\CONTRATOS V3\"
+    RutaV4 = "G:\.shortcut-targets-by-id\1M52sd_Ql6bwrWoegELuWJbM18alQlx8F\1.3.- REVISOR DE CONTRATOS\CONTRATOS V4 PAU\"
+    RutaV5 = "G:\.shortcut-targets-by-id\1M52sd_Ql6bwrWoegELuWJbM18alQlx8F\1.3.- REVISOR DE CONTRATOS\CONTRATOS V5 VACANTE\"
+    RutaV6 = "G:\.shortcut-targets-by-id\1M52sd_Ql6bwrWoegELuWJbM18alQlx8F\1.3.- REVISOR DE CONTRATOS\CONTRATOS V6 SAM\"
+    RutaV7 = "G:\.shortcut-targets-by-id\1M52sd_Ql6bwrWoegELuWJbM18alQlx8F\1.3.- REVISOR DE CONTRATOS\CONTRATOS V7 HARLEY\"
+    RutaV8 = "G:\.shortcut-targets-by-id\1M52sd_Ql6bwrWoegELuWJbM18alQlx8F\1.3.- REVISOR DE CONTRATOS\CONTRATOS V8 AARON\"
+    ' -----------------------------------------------------------------
+
+    ' -----------------------------------------------------------------
+    ' CREDENCIALES SUPABASE — REEMPLAZA CON TUS VALORES
+    ' Obtenlas en: https://app.supabase.com/project/[project]/settings/api
+    ' -----------------------------------------------------------------
+    Dim SupabaseURL  As String
+    Dim SupabaseKey  As String
+
+    SupabaseURL = "https://eftsuegjfqgwdrajkloc.supabase.co"           ' Sin slash final
+    SupabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVmdHN1ZWdqZnFnd2RyYWprbG9jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3NzQ5NDUsImV4cCI6MjA5NDM1MDk0NX0.qjtTRJk7oM3SQf5iat9OzbFmt2-VSneBNZ28TSUDXmE"  ' Tu anon key
+
+    If SupabaseURL = "https://tu-proyecto.supabase.co" Or SupabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." Then
+        MsgBox "⚠️ Configura SupabaseURL y SupabaseKey en el script", vbExclamation, "Credenciales faltantes"
+        Exit Sub
+    End If
+    ' -----------------------------------------------------------------
+
+    Dim clave          As String
+    Dim contrato       As Worksheet
+    Dim contratos2024  As Worksheet
+    Dim NumContrato    As Long
+    Dim NombreArchivo  As String
+    Dim RutaPDF        As String
+    Dim fila           As Long
+    Dim respuesta      As Integer
+
+    clave = "2299"
+    Set contrato = ThisWorkbook.Sheets("CONTRATO")
+    Set contratos2024 = ThisWorkbook.Sheets("CONTRATOS 2024")
+
+    ' --- Confirmación inicial ---
+    If MsgBox("¿Quieres guardar los datos (Excel + Supabase)?", vbQuestion + vbYesNo, "Advertencia") = vbNo Then
+        Exit Sub
+    End If
+
+    ' --- Desproteger hojas UNA sola vez ---
+    contrato.Unprotect Password:=clave
+
+    ' =================================================================
+    ' VALIDACIONES DE CAMPOS OBLIGATORIOS
+    ' =================================================================
+    If IsEmpty(contrato.Range("B10")) Then
+        MsgBox "Captura el número de Contrato (B10)", vbExclamation, "Campo requerido"
+        GoTo Reproteger
+    End If
+    If IsEmpty(contrato.Range("D11")) Then
+        MsgBox "Captura el Cliente o Empresa (D11)", vbExclamation, "Campo requerido"
+        GoTo Reproteger
+    End If
+    If IsEmpty(contrato.Range("C12")) Then
+        MsgBox "Captura la Dirección (C12)", vbExclamation, "Campo requerido"
+        GoTo Reproteger
+    End If
+    If IsEmpty(contrato.Range("C13")) Then
+        MsgBox "Captura el Teléfono (C13)", vbExclamation, "Campo requerido"
+        GoTo Reproteger
+    End If
+    If IsEmpty(contrato.Range("K9")) Then
+        MsgBox "Captura el Encargado (K9)", vbExclamation, "Campo requerido"
+        GoTo Reproteger
+    End If
+    If IsEmpty(contrato.Range("A15")) Then
+        MsgBox "Captura Dirección de Proyecto (A15)", vbExclamation, "Campo requerido"
+        GoTo Reproteger
+    End If
+    If IsEmpty(contrato.Range("C16")) Then
+        MsgBox "Captura Fecha de Pago (C16)", vbExclamation, "Campo requerido"
+        GoTo Reproteger
+    End If
+    If IsEmpty(contrato.Range("F17")) Then
+        MsgBox "Captura Fecha inicio de renta (F17)", vbExclamation, "Campo requerido"
+        GoTo Reproteger
+    End If
+    If IsEmpty(contrato.Range("G18")) Then
+        MsgBox "Captura quién recibe (G18)", vbExclamation, "Campo requerido"
+        GoTo Reproteger
+    End If
+    If IsEmpty(contrato.Range("J18")) Then
+        MsgBox "Captura Móvil de quien recibe (J18)", vbExclamation, "Campo requerido"
+        GoTo Reproteger
+    End If
+    If IsEmpty(contrato.Range("L18")) Then
+        MsgBox "Captura la Factura (L18)", vbExclamation, "Campo requerido"
+        GoTo Reproteger
+    End If
+    If IsEmpty(contrato.Range("D10")) Then
+        MsgBox "Captura la Sucursal (D10)", vbExclamation, "Campo requerido"
+        GoTo Reproteger
+    End If
+    If IsEmpty(contrato.Range("K14")) Then
+        MsgBox "Captura el Medio de Contacto (K14)", vbExclamation, "Campo requerido"
+        GoTo Reproteger
+    End If
+    If IsEmpty(contrato.Range("C18")) Then
+        MsgBox "Captura la Forma de pago (C18)", vbExclamation, "Campo requerido"
+        GoTo Reproteger
+    End If
+    If contrato.Range("K52").Value <= 0 Then
+        MsgBox "Captura las cantidades de cada producto (K52 debe ser > 0)", vbExclamation, "Campo requerido"
+        GoTo Reproteger
+    End If
+    If contrato.Range("K160").Value <= 0 Then
+        MsgBox "Captura un valor para el pagaré (K160)", vbExclamation, "Campo requerido"
+        GoTo Reproteger
+    End If
+    If IsEmpty(contrato.Range("K18")) Then
+        MsgBox "Captura el Vendedor / Agente (K18)", vbExclamation, "Campo requerido"
+        GoTo Reproteger
+    End If
+
+    ' =================================================================
+    ' CONSTRUIR DATOS DEL CONTRATO
+    ' =================================================================
+    NumContrato = contrato.Cells(10, 2).Value
+
+    Dim FechaHoy     As Date
+    Dim Anio         As String
+    Dim NombreMes    As String
+    Dim FechaStr     As String
+    Dim FolioStr     As String
+    Dim VendedorStr  As String
+    Dim NombrePDF    As String
+    Dim RutaPDFGen   As String
+    Dim RutaPDFAgent As String
+    Dim RutaAgente   As String
+
+    FechaHoy = Now()
+    Anio = Format(FechaHoy, "YYYY")
+    FechaStr = Format(FechaHoy, "YYMMDD")
+    FolioStr = Format(NumContrato, "0000")
+    NombreMes = ObtenerNombreMes(Month(FechaHoy))
+    VendedorStr = "V" & Trim(CStr(contrato.Cells(18, 12).Value))
+
+    NombrePDF = "C-" & FolioStr & "-" & VendedorStr & "-" & FechaStr & ".pdf"
+    RutaPDFGen = RutaGeneral & Anio & "\" & NombreMes & "\"
+
+    Select Case UCase(Trim(VendedorStr))
+        Case "V1": RutaAgente = RutaV1
+        Case "V2": RutaAgente = RutaV2
+        Case "V3": RutaAgente = RutaV3
+        Case "V4": RutaAgente = RutaV4
+        Case "V5": RutaAgente = RutaV5
+        Case "V6": RutaAgente = RutaV6
+        Case "V7": RutaAgente = RutaV7
+        Case "V8": RutaAgente = RutaV8
+        Case Else: RutaAgente = RutaGeneral
+    End Select
+
+    RutaPDFAgent = RutaAgente
+
+    Call CrearCarpetaSiNoExiste(RutaPDFGen)
+    Call CrearCarpetaSiNoExiste(RutaPDFAgent)
+
+    ' Verificar si el PDF ya existe
+    If Dir(RutaPDFGen & NombrePDF) <> "" Then
+        respuesta = MsgBox("El archivo '" & NombrePDF & "' ya existe." & vbCrLf & _
+                           "¿Deseas sobreescribirlo?", vbYesNo + vbExclamation, "Archivo existente")
+        If respuesta = vbNo Then
+            MsgBox "Operacion cancelada. Revisa el folio en B10.", vbInformation, "Cancelado"
+            GoTo Reproteger
+        End If
+    End If
+
+    ' =================================================================
+    ' GUARDAR EN EXCEL (proceso original)
+    ' =================================================================
+    fila = 3
+    Do While contratos2024.Cells(fila, "A").Value <> ""
+        fila = fila + 1
+    Loop
+
+    contratos2024.Cells(fila, 1).Value = NumContrato
+    contratos2024.Cells(fila, 2).Value = contrato.Cells(18, 12).Value
+    contratos2024.Cells(fila, 3).Value = contrato.Cells(10, 6).Value
+    contratos2024.Cells(fila, 4).Value = contrato.Cells(10, 8).Value
+    contratos2024.Cells(fila, 5).Value = contrato.Cells(9, 11).Value
+    contratos2024.Cells(fila, 6).Value = contrato.Cells(11, 4).Value
+    contratos2024.Cells(fila, 7).Value = contrato.Cells(17, 3).Value
+    contratos2024.Cells(fila, 8).Value = contrato.Cells(17, 6).Value
+    contratos2024.Cells(fila, 10).Value = IIf(CheckBox1.Value, contrato.Cells(10, 10).Value, "EN RENTA")
+    contratos2024.Cells(fila, 11).Value = contrato.Cells(63, 11).Value
+    contratos2024.Cells(fila, 15).Value = contrato.Cells(18, 7).Value
+    contratos2024.Cells(fila, 19).Value = contrato.Cells(18, 10).Value
+    contratos2024.Cells(fila, 20).Value = contrato.Cells(18, 3).Value
+    contratos2024.Cells(fila, 25).Value = contrato.Cells(10, 4).Value
+    contratos2024.Cells(fila, 34).Value = contrato.Cells(14, 11).Value
+    contratos2024.Cells(fila, 12).Value = contrato.Cells(64, 11).Value
+    contratos2024.Cells(fila, 44).Value = contrato.Cells(12, 28).Value
+
+    ' =================================================================
+    ' GUARDAR HISTÓRICO VERTICAL EN EXCEL
+    ' =================================================================
+    Call GuardarHistoricoVerticalContratos(contrato, clave)
+
+    ' =================================================================
+    ' 🚀 NUEVO: ENVIAR A SUPABASE
+    ' =================================================================
+    Dim exito As Boolean
+    exito = EnviarContratoASupabase(contrato, NumContrato, SupabaseURL, SupabaseKey)
+
+    If Not exito Then
+        MsgBox "Error al guardar en Supabase. Los datos se guardaron en Excel.", vbExclamation, "Advertencia Supabase"
+    End If
+
+    ' =================================================================
+    ' GENERAR PDF
+    ' =================================================================
+    contrato.ExportAsFixedFormat Type:=xlTypePDF, Filename:=RutaPDFGen & NombrePDF, Quality:=xlQualityStandard
+    contrato.ExportAsFixedFormat Type:=xlTypePDF, Filename:=RutaPDFAgent & NombrePDF, Quality:=xlQualityStandard
+
+    MsgBox "✓ Contrato guardado:" & vbCrLf & vbCrLf & _
+           "  • Excel (local): Completado" & vbCrLf & _
+           "  • Supabase (remoto): " & IIf(exito, "✓ Completado", "✗ Error") & vbCrLf & _
+           "  • PDF (carpetas): " & NombrePDF, vbInformation, "Éxito"
+
+    ' =================================================================
+    ' LIMPIAR CAMPOS
+    ' =================================================================
+    contrato.Unprotect Password:=clave
+
+    contrato.Range("J18").ClearContents
+    contrato.Range("L18").ClearContents
+    contrato.Range("K160").ClearContents
+    contrato.Range("D11:G11").ClearContents
+    contrato.Range("A15:G15").ClearContents
+    contrato.Range("C16").ClearContents
+    contrato.Range("C17").ClearContents
+    On Error Resume Next
+    contrato.Range("F17").Value = ""
+    contrato.Range("F17").ClearContents
+    On Error GoTo 0
+    contrato.Range("G18").ClearContents
+    contrato.Range("A21:B51").ClearContents
+    contrato.Range("C21:D51").ClearContents
+    contrato.Range("F10").ClearContents
+    contrato.Range("H10").ClearContents
+    contrato.Range("C18").ClearContents
+    contrato.Range("F16").ClearContents
+    contrato.Range("K14:L14").ClearContents
+    contrato.Range("D55:D60").ClearContents
+    contrato.Range("D63").ClearContents
+    contrato.Range("C54:D54").Value = 0
+    contrato.Range("K75").Value = 0
+    CheckBox3.Value = False
+    contrato.Range("AB12").ClearContents
+
+    ' Incrementar folio después de que todo salió bien
+    NumContrato = NumContrato + 1
+    contrato.Cells(10, 2).Value = NumContrato
+
+    ThisWorkbook.Save
+
+    MsgBox "Contrato " & (NumContrato - 1) & " completado.", vbInformation, "Finalizado"
+
+Reproteger:
+    contrato.Range("AB12").Locked = False
+    contrato.Protect Password:=clave
+
+End Sub
+
+
+' =====================================================================
+' 🌐 FUNCIÓN PRINCIPAL: Enviar contrato a Supabase
+' =====================================================================
+Private Function EnviarContratoASupabase(ByRef contrato As Worksheet, NumContrato As Long, SupabaseURL As String, SupabaseKey As String) As Boolean
+
+    On Error GoTo ErrorHandler
+
+    Dim jsonContrato As String
+    Dim respuestaContrato As String
+    Dim contratoID As Variant
+
+    ' Construir JSON del contrato
+    jsonContrato = ConstruirJSONContrato(contrato, NumContrato)
+
+    ' Insertar en tabla "contratos"
+    respuestaContrato = LlamarSupabase(SupabaseURL, "contratos", jsonContrato, SupabaseKey, "POST")
+
+    ' Validar respuesta
+    If InStr(respuestaContrato, "id") = 0 Then
+        MsgBox "Supabase rechazó los datos del contrato: " & vbCrLf & respuestaContrato, vbExclamation, "Error Supabase"
+        EnviarContratoASupabase = False
+        Exit Function
+    End If
+
+    ' Extraer ID del contrato creado (opcional, si lo necesitas)
+    contratoID = ExtractJSONValue(respuestaContrato, "id")
+
+    ' Insertar productos (items)
+    Call EnviarItemsASupabase(contrato, NumContrato, SupabaseURL, SupabaseKey)
+
+    EnviarContratoASupabase = True
+    Exit Function
+
+ErrorHandler:
+    MsgBox "Error al conectar con Supabase: " & Err.Description, vbExclamation, "Error de conexión"
+    EnviarContratoASupabase = False
+
+End Function
+
+
+' =====================================================================
+' FUNCIÓN: Construir JSON con datos del contrato
+' =====================================================================
+Private Function ConstruirJSONContrato(ByRef contrato As Worksheet, NumContrato As Long) As String
+
+    Dim json As String
+    Dim Tipo As String
+
+    Tipo = IIf(CheckBox1.Value, CStr(contrato.Cells(10, 10).Value), "EN RENTA")
+
+    json = "{" & _
+        """numero_contrato"":" & NumContrato & "," & _
+        """cliente"":" & JSONString(CStr(contrato.Cells(11, 4).Value)) & "," & _
+        """direccion_cliente"":" & JSONString(CStr(contrato.Cells(12, 3).Value)) & "," & _
+        """telefono"":" & JSONString(CStr(contrato.Cells(13, 3).Value)) & "," & _
+        """obra"":" & JSONString(CStr(contrato.Cells(15, 1).Value)) & "," & _
+        """encargado"":" & JSONString(CStr(contrato.Cells(9, 11).Value)) & "," & _
+        """vendedor"":" & CLng(contrato.Cells(18, 12).Value) & "," & _
+        """sucursal"":" & JSONString(CStr(contrato.Cells(10, 4).Value)) & "," & _
+        """fecha_pago"":" & JSONDate(contrato.Cells(16, 3).Value) & "," & _
+        """fecha_inicio_renta"":" & JSONDate(contrato.Cells(17, 6).Value) & "," & _
+        """quien_recibe"":" & JSONString(CStr(contrato.Cells(18, 7).Value)) & "," & _
+        """movil_quien_recibe"":" & JSONString(CStr(contrato.Cells(18, 10).Value)) & "," & _
+        """factura"":" & JSONString(CStr(contrato.Cells(18, 12).Value)) & "," & _
+        """forma_pago"":" & JSONString(CStr(contrato.Cells(18, 3).Value)) & "," & _
+        """medio_contacto"":" & JSONString(CStr(contrato.Cells(14, 11).Value)) & "," & _
+        """dias_renta"":" & CLng(contrato.Cells(17, 3).Value) & "," & _
+        """subtotal"":" & CDbl(contrato.Cells(63, 11).Value) & "," & _
+        """iva"":" & CDbl(contrato.Cells(64, 11).Value) & "," & _
+        """tipo"":" & JSONString(Tipo) & "," & _
+        """sistema"":" & JSONString(CStr(contrato.Cells(12, 28).Value)) & "," & _
+        """fecha_registro"":" & JSONDate(Now()) & _
+        "}"
+
+    ConstruirJSONContrato = json
+
+End Function
+
+
+' =====================================================================
+' FUNCIÓN: Enviar items (productos) a Supabase
+' =====================================================================
+Private Sub EnviarItemsASupabase(ByRef contrato As Worksheet, NumContrato As Long, SupabaseURL As String, SupabaseKey As String)
+
+    Dim i As Integer
+    Dim jsonItem As String
+    Dim respuesta As String
+
+    ' Recorrer filas de 21 a 51 (donde están los productos)
+    For i = 21 To 51
+
+        ' Si hay datos en la fila
+        If contrato.Cells(i, 1).Value <> "" Then
+
+            jsonItem = "{" & _
+                """numero_contrato"":" & NumContrato & "," & _
+                """cantidad"":" & ContractValue(contrato.Cells(i, 1).Value) & "," & _
+                """sku"":" & JSONString(CStr(contrato.Cells(i, 3).Value)) & "," & _
+                """descripcion"":" & JSONString(CStr(contrato.Cells(i, 5).Value)) & "," & _
+                """peso_unitario"":" & ContractValue(contrato.Cells(i, 9).Value) & "," & _
+                """peso_total"":" & ContractValue(contrato.Cells(i, 11).Value) & _
+                "}"
+
+            respuesta = LlamarSupabase(SupabaseURL, "contratos_items", jsonItem, SupabaseKey, "POST")
+
+            ' Log opcional (descomenta para debug)
+            ' Debug.Print "Item " & i & ": " & respuesta
+
+        End If
+
+    Next i
+
+End Sub
+
+
+' =====================================================================
+' FUNCIÓN: Hacer llamada HTTP a Supabase (POST/GET/PATCH/DELETE)
+' =====================================================================
+Private Function LlamarSupabase(URL As String, tabla As String, jsonData As String, apiKey As String, metodo As String) As String
+
+    Dim xmlHttp As Object
+    Dim respuesta As String
+    Dim rutaCompleta As String
+
+    Set xmlHttp = CreateObject("MSXML2.XMLHTTP")
+
+    rutaCompleta = URL & "/rest/v1/" & tabla
+
+    With xmlHttp
+        .Open metodo, rutaCompleta, False
+        .setRequestHeader "Content-Type", "application/json"
+        .setRequestHeader "Authorization", "Bearer " & apiKey
+        .setRequestHeader "Prefer", "return=representation"
+
+        If metodo = "POST" Or metodo = "PATCH" Or metodo = "DELETE" Then
+            .Send jsonData
+        Else
+            .Send
+        End If
+
+        respuesta = .ResponseText
+    End With
+
+    LlamarSupabase = respuesta
+
+End Function
+
+
+' =====================================================================
+' FUNCIÓN AUXILIAR: Convertir string a JSON string (escapa comillas)
+' =====================================================================
+Private Function JSONString(ByVal texto As String) As String
+    texto = Replace(texto, "\", "\\")
+    texto = Replace(texto, """", "\""")
+    texto = Replace(texto, vbCrLf, "\n")
+    JSONString = """" & texto & """"
+End Function
+
+
+' =====================================================================
+' FUNCIÓN AUXILIAR: Convertir fecha a formato ISO 8601 para JSON
+' =====================================================================
+Private Function JSONDate(ByVal fecha As Variant) As String
+    If IsEmpty(fecha) Or fecha = 0 Then
+        JSONDate = "null"
+    Else
+        JSONDate = """" & Format(CDate(fecha), "YYYY-MM-DD") & """"
+    End If
+End Function
+
+
+' =====================================================================
+' FUNCIÓN AUXILIAR: Convertir valor numérico (validar null)
+' =====================================================================
+Private Function ContractValue(ByVal valor As Variant) As String
+    If IsEmpty(valor) Or valor = "" Then
+        ContractValue = "null"
+    Else
+        ContractValue = CStr(CDbl(valor))
+    End If
+End Function
+
+
+' =====================================================================
+' FUNCIÓN AUXILIAR: Extraer valor de JSON (parsing simple)
+' =====================================================================
+Private Function ExtractJSONValue(jsonString As String, key As String) As Variant
+
+    Dim startPos As Long
+    Dim endPos As Long
+    Dim searchKey As String
+
+    searchKey = """" & key & """:"
+
+    startPos = InStr(jsonString, searchKey)
+    If startPos = 0 Then
+        ExtractJSONValue = ""
+        Exit Function
+    End If
+
+    startPos = startPos + Len(searchKey)
+    endPos = InStr(startPos, jsonString, ",")
+    If endPos = 0 Then endPos = InStr(startPos, jsonString, "}")
+
+    If endPos > startPos Then
+        ExtractJSONValue = Trim(Mid(jsonString, startPos, endPos - startPos))
+    Else
+        ExtractJSONValue = ""
+    End If
+
+End Function
+
+
+' =====================================================================
+' FUNCIÓN AUXILIAR: Limpiar nombre de archivo
+' =====================================================================
+Private Function LimpiarNombreArchivo(ByVal texto As String) As String
+    texto = Replace(texto, "\", "")
+    texto = Replace(texto, "/", "")
+    texto = Replace(texto, ":", "")
+    texto = Replace(texto, "*", "")
+    texto = Replace(texto, "?", "")
+    texto = Replace(texto, Chr(34), "")
+    texto = Replace(texto, "<", "")
+    texto = Replace(texto, ">", "")
+    texto = Replace(texto, "|", "")
+    texto = Replace(texto, " ", "_")
+    LimpiarNombreArchivo = texto
+End Function
+
+
+' =====================================================================
+' FUNCIÓN AUXILIAR: Nombre del mes en español
+' =====================================================================
+Private Function ObtenerNombreMes(ByVal numMes As Integer) As String
+    Dim meses(1 To 12) As String
+    meses(1) = "Enero": meses(2) = "Febrero": meses(3) = "Marzo"
+    meses(4) = "Abril": meses(5) = "Mayo": meses(6) = "Junio"
+    meses(7) = "Julio": meses(8) = "Agosto": meses(9) = "Septiembre"
+    meses(10) = "Octubre": meses(11) = "Noviembre": meses(12) = "Diciembre"
+    ObtenerNombreMes = meses(numMes)
+End Function
+
+
+' =====================================================================
+' SUB AUXILIAR: Crear carpeta recursiva
+' =====================================================================
+Private Sub CrearCarpetaSiNoExiste(ByVal ruta As String)
+    Dim partes()  As String
+    Dim acumulada As String
+    Dim i         As Integer
+
+    If Right(ruta, 1) = "\" Then ruta = Left(ruta, Len(ruta) - 1)
+    partes = Split(ruta, "\")
+    acumulada = partes(0)
+
+    For i = 1 To UBound(partes)
+        acumulada = acumulada & "\" & partes(i)
+        If Dir(acumulada, vbDirectory) = "" Then
+            On Error Resume Next
+            MkDir acumulada
+            On Error GoTo 0
+        End If
+    Next i
+End Sub
+
+
+' =====================================================================
+' SUB AUXILIAR: Guardar histórico vertical
+' =====================================================================
+Private Sub GuardarHistoricoVerticalContratos(ByRef contrato As Worksheet, ByVal clave As String)
+
+    Dim wsContratos  As Worksheet
+    Dim lastRowVert  As Long
+    Dim i            As Integer
+    Dim canItems     As Integer
+    Dim wsBuscar     As Worksheet
+    Dim hojaExiste   As Boolean
+
+    hojaExiste = False
+    For Each wsBuscar In ThisWorkbook.Sheets
+        If UCase(Trim(wsBuscar.Name)) = "CONTRATOS" Then
+            Set wsContratos = wsBuscar
+            hojaExiste = True
+            Exit For
+        End If
+    Next wsBuscar
+
+    If Not hojaExiste Then
+        Set wsContratos = ThisWorkbook.Sheets.Add(After:=ThisWorkbook.Sheets(ThisWorkbook.Sheets.Count))
+        wsContratos.Name = "Contratos"
+
+        With wsContratos
+            .Cells(1, 1).Value = "Contrato"
+            .Cells(1, 2).Value = "Cliente"
+            .Cells(1, 3).Value = "Obra"
+            .Cells(1, 4).Value = "Ren_Anterior"
+            .Cells(1, 5).Value = "Ren_Posterior"
+            .Cells(1, 6).Value = "Importe_c"
+            .Cells(1, 7).Value = "Dias_renta"
+            .Cells(1, 8).Value = "Fecha"
+            .Cells(1, 9).Value = "Telefono"
+            .Cells(1, 10).Value = "Encargado"
+            .Cells(1, 11).Value = "can_items"
+            .Cells(1, 12).Value = "SKU"
+            .Cells(1, 13).Value = "Descripcion"
+            .Cells(1, 14).Value = "Peso_unitario"
+            .Cells(1, 15).Value = "Peso_total"
+            .Cells(1, 16).Value = "Cantidad"
+            .Cells(1, 17).Value = "Tipo"
+            .Cells(1, 18).Value = "Fecha_Registro"
+            .Cells(1, 19).Value = "Sistema"
+
+            With .Range("A1:S1")
+                .Font.Bold = True
+                .Interior.Color = RGB(31, 78, 121)
+                .Font.Color = RGB(255, 255, 255)
+                .HorizontalAlignment = xlCenter
+            End With
+            .Columns("A:S").AutoFit
+        End With
+    End If
+
+    wsContratos.Unprotect Password:=clave
+
+    Dim NumContrato   As Long
+    Dim Cliente       As String
+    Dim Obra          As String
+    Dim RenAnterior   As Variant
+    Dim RenPosterior  As Variant
+    Dim ImporteC      As Variant
+    Dim DiasRenta     As Variant
+    Dim Fecha         As Variant
+    Dim Telefono      As String
+    Dim Encargado     As String
+    Dim Tipo          As String
+    Dim Sistema       As String
+
+    NumContrato = CLng(contrato.Cells(10, 2).Value)
+    Cliente = CStr(contrato.Cells(11, 3).Value)
+    Obra = CStr(contrato.Cells(10, 3).Value)
+    RenAnterior = contrato.Cells(10, 6).Value
+    RenPosterior = contrato.Cells(10, 8).Value
+    ImporteC = contrato.Cells(62, 4).Value
+    DiasRenta = contrato.Cells(52, 1).Value
+    Fecha = contrato.Cells(16, 3).Value
+    Telefono = CStr(contrato.Cells(16, 7).Value)
+    Encargado = CStr(contrato.Cells(9, 11).Value)
+    Sistema = CStr(contrato.Cells(12, 28).Value)
+    Tipo = IIf(CheckBox1.Value, CStr(contrato.Cells(10, 10).Value), "EN RENTA")
+
+    canItems = 0
+    For i = 21 To 51
+        If contrato.Cells(i, 1).Value <> "" Then canItems = canItems + 1
+    Next i
+
+    For i = 21 To 51
+        If contrato.Cells(i, 1).Value <> "" Then
+
+            lastRowVert = wsContratos.Cells(wsContratos.Rows.Count, 1).End(xlUp).Row + 1
+
+            wsContratos.Cells(lastRowVert, 1).Value = NumContrato
+            wsContratos.Cells(lastRowVert, 2).Value = Cliente
+            wsContratos.Cells(lastRowVert, 3).Value = Obra
+            wsContratos.Cells(lastRowVert, 4).Value = RenAnterior
+            wsContratos.Cells(lastRowVert, 5).Value = RenPosterior
+            wsContratos.Cells(lastRowVert, 6).Value = ImporteC
+            wsContratos.Cells(lastRowVert, 7).Value = DiasRenta
+            wsContratos.Cells(lastRowVert, 8).Value = Fecha
+            wsContratos.Cells(lastRowVert, 9).Value = Telefono
+            wsContratos.Cells(lastRowVert, 10).Value = Encargado
+            wsContratos.Cells(lastRowVert, 11).Value = canItems
+            wsContratos.Cells(lastRowVert, 12).Value = CStr(contrato.Cells(i, 3).Value)
+            wsContratos.Cells(lastRowVert, 13).Value = CStr(contrato.Cells(i, 5).Value)
+            wsContratos.Cells(lastRowVert, 14).Value = contrato.Cells(i, 9).Value
+            wsContratos.Cells(lastRowVert, 15).Value = contrato.Cells(i, 11).Value
+            wsContratos.Cells(lastRowVert, 16).Value = contrato.Cells(i, 1).Value
+            wsContratos.Cells(lastRowVert, 17).Value = Tipo
+            wsContratos.Cells(lastRowVert, 18).Value = Now()
+            wsContratos.Cells(lastRowVert, 19).Value = Sistema
+
+            If (lastRowVert Mod 2) = 0 Then
+                wsContratos.Range("A" & lastRowVert & ":S" & lastRowVert).Interior.Color = RGB(189, 215, 238)
+            Else
+                wsContratos.Range("A" & lastRowVert & ":S" & lastRowVert).Interior.Color = RGB(255, 255, 255)
+            End If
+
+        End If
+    Next i
+
+    wsContratos.Columns("A:S").AutoFit
+    wsContratos.Protect Password:=clave
+
+End Sub
