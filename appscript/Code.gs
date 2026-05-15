@@ -351,6 +351,11 @@ function enviarASupabase(datos) {
   // Contrato
   const contrato = { ...datos };
   delete contrato.items;
+  // Estos campos son solo para Google Sheets, Supabase no los tiene en su tabla:
+  delete contrato.fecha_fin_renta;
+  delete contrato.total_contrato;
+  delete contrato.cantidad_total;
+  
   contrato.fecha_registro = new Date().toISOString();
 
   const resp = UrlFetchApp.fetch(url + 'contratos', {
