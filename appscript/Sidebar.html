@@ -2,149 +2,196 @@
 <html>
 <head>
 <base target="_top">
+<!-- Incluimos TomSelect para los desplegables con buscador rápido -->
+<link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
+
 <style>
 :root { --primary:#2563eb; --success:#10b981; --danger:#ef4444; --border:#e2e8f0; --bg:#f8fafc; --text:#0f172a; --muted:#94a3b8; }
 * { margin:0; padding:0; box-sizing:border-box; }
 body { font-family:'Segoe UI',system-ui,sans-serif; font-size:13px; color:var(--text); background:var(--bg); }
-.header { background:linear-gradient(135deg,#1e3a8a,#2563eb); color:white; padding:20px 16px; }
-.header h2 { font-size:16px; font-weight:700; }
-.header p { font-size:11px; opacity:0.8; margin-top:4px; }
-.form { padding:16px; }
-.section { margin-bottom:16px; }
-.section-title { font-size:11px; font-weight:700; text-transform:uppercase; color:var(--primary); letter-spacing:0.05em; margin-bottom:10px; padding-bottom:4px; border-bottom:2px solid var(--primary); }
-.field { margin-bottom:10px; }
-.field label { display:block; font-size:11px; font-weight:600; color:#475569; margin-bottom:3px; }
+.header { background:linear-gradient(135deg,#1e3a8a,#2563eb); color:white; padding:16px 20px; display:flex; justify-content:space-between; align-items:center;}
+.header h2 { font-size:18px; font-weight:700; }
+.header p { font-size:12px; opacity:0.9; }
+
+.modal-container { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; padding: 20px; }
+.col { display: flex; flex-direction: column; gap: 16px; }
+
+.section { background:white; border:1px solid var(--border); border-radius:8px; padding:16px; box-shadow:0 1px 3px rgba(0,0,0,0.05); }
+.section-title { font-size:12px; font-weight:700; text-transform:uppercase; color:var(--primary); letter-spacing:0.05em; margin-bottom:12px; padding-bottom:6px; border-bottom:2px solid var(--primary); }
+.field { margin-bottom:12px; }
+.field label { display:block; font-size:11px; font-weight:600; color:#475569; margin-bottom:4px; }
 .field label .req { color:var(--danger); }
-.field input, .field select, .field textarea { width:100%; padding:7px 10px; border:1px solid var(--border); border-radius:6px; font-size:12px; background:white; }
+.field input, .field select, .field textarea { width:100%; padding:8px 10px; border:1px solid var(--border); border-radius:6px; font-size:12px; background:white; }
 .field input:focus, .field select:focus { outline:none; border-color:var(--primary); box-shadow:0 0 0 2px rgba(37,99,235,0.15); }
-.row { display:grid; gap:8px; }
+.row { display:grid; gap:12px; }
 .row-2 { grid-template-columns:1fr 1fr; }
 .row-3 { grid-template-columns:1fr 1fr 1fr; }
-.items-section { background:white; border:1px solid var(--border); border-radius:8px; padding:12px; margin-bottom:16px; }
+
+/* Items List */
 .items-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
-.items-header h3 { font-size:13px; font-weight:700; }
-.item-row { display:grid; grid-template-columns:60px 1fr 30px; gap:6px; align-items:center; margin-bottom:6px; }
-.item-row input, .item-row select { padding:5px 8px; font-size:11px; }
+.items-header h3 { font-size:13px; font-weight:700; color:var(--primary); }
+.item-row { display:grid; grid-template-columns:70px 1fr 30px; gap:8px; align-items:center; margin-bottom:8px; }
+.item-row input { padding:6px 8px; font-size:12px; }
 .btn-add { background:var(--primary); color:white; border:none; padding:4px 10px; border-radius:4px; font-size:11px; cursor:pointer; font-weight:600; }
-.btn-remove { background:var(--danger); color:white; border:none; width:24px; height:24px; border-radius:4px; cursor:pointer; font-size:14px; line-height:1; }
-.footer { padding:16px; border-top:1px solid var(--border); background:white; position:sticky; bottom:0; }
-.btn-main { width:100%; padding:12px; background:var(--primary); color:white; border:none; border-radius:8px; font-size:14px; font-weight:700; cursor:pointer; }
+.btn-remove { background:var(--danger); color:white; border:none; width:26px; height:26px; border-radius:4px; cursor:pointer; font-size:14px; line-height:1; display:flex; align-items:center; justify-content:center;}
+
+.footer { padding:16px 20px; border-top:1px solid var(--border); background:white; position:sticky; bottom:0; display:flex; flex-direction:column; gap:10px; z-index:10;}
+.btn-main { width:100%; padding:14px; background:var(--primary); color:white; border:none; border-radius:8px; font-size:15px; font-weight:700; cursor:pointer; }
 .btn-main:hover { background:#1d4ed8; }
 .btn-main:disabled { opacity:0.5; cursor:wait; }
-.status { text-align:center; margin-top:10px; font-size:12px; padding:8px; border-radius:6px; display:none; }
+.status { text-align:center; font-size:13px; font-weight:600; padding:10px; border-radius:6px; display:none; }
 .status.ok { display:block; background:#d1fae5; color:#065f46; }
 .status.err { display:block; background:#fee2e2; color:#991b1b; }
-.folio-display { background:white; border:1px solid var(--border); border-radius:8px; padding:8px 12px; text-align:center; margin-bottom:16px; }
-.folio-display span { font-size:24px; font-weight:800; color:var(--primary); font-family:monospace; }
+
+.folio-display { text-align:right; }
+.folio-display span { font-size:24px; font-weight:800; color:white; font-family:monospace; background:rgba(0,0,0,0.2); padding:4px 12px; border-radius:6px;}
+
+/* Custom TomSelect adjustments */
+.ts-control { border-radius: 6px; border: 1px solid var(--border); padding: 8px 10px; font-size: 12px; min-height: 33px;}
+.ts-control.focus { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(37,99,235,0.15); }
+.ts-dropdown { font-size: 12px; border-radius: 6px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
 </style>
 </head>
 <body>
 
 <div class="header">
-  <h2>📄 Nuevo Contrato</h2>
-  <p>Llena los datos y el sistema guardará en Sheets, Supabase y generará el PDF</p>
+  <div>
+    <h2>📄 Nuevo Contrato</h2>
+    <p>Llena los datos para guardar en Sheets, Supabase y generar PDF</p>
+  </div>
+  <div class="folio-display">
+    <span id="folioNum">...</span>
+  </div>
 </div>
 
-<div class="form" id="formArea">
-  <!-- Folio -->
-  <div class="folio-display">
-    <div style="font-size:10px;color:var(--muted);text-transform:uppercase;font-weight:600">Folio</div>
-    <span id="folioNum">—</span>
-  </div>
+<div class="modal-container" id="formArea">
+  
+  <!-- COLUMNA IZQUIERDA -->
+  <div class="col">
+    <div class="section">
+      <div class="section-title">Datos Generales</div>
+      <div class="row row-2">
+        <div class="field"><label>Sucursal <span class="req">*</span></label>
+          <select id="sucursal"><option value="">Seleccionar</option><option>Torres</option><option>Almacen</option></select></div>
+        <div class="field"><label>Tipo <span class="req">*</span></label>
+          <select id="tipo_operacion">
+            <option>Venta</option>
+            <option>Renta</option>
+            <option>Renovacion</option>
+            <option>Venta por perdidad</option>
+          </select>
+        </div>
+      </div>
+      <div class="row row-2">
+        <div class="field"><label>Renta Anterior</label><input id="renta_anterior" type="number" placeholder="0"></div>
+        <div class="field"><label>Renta Posterior</label><input id="renta_posterior" type="number" placeholder="0"></div>
+      </div>
+      <div class="field"><label>Sistema</label>
+        <select id="sistema">
+          <option value="">Seleccionar</option>
+          <option>Torre de trabajo</option>
+          <option>Multidireccional</option>
+          <option>Apuntalamiento</option>
+          <option>Hamacas</option>
+          <option>Armado</option>
+          <option>Vallas</option>
+          <option>Otros</option>
+        </select>
+      </div>
+    </div>
 
-  <!-- Datos Generales -->
-  <div class="section">
-    <div class="section-title">Datos Generales</div>
-    <div class="row row-2">
-      <div class="field"><label>Sucursal <span class="req">*</span></label>
-        <select id="sucursal"><option value="">Seleccionar</option><option>Monterrey</option><option>Guadalajara</option><option>CDMX</option><option>Queretaro</option></select></div>
-      <div class="field"><label>Tipo <span class="req">*</span></label>
-        <select id="tipo_operacion"><option>EN RENTA</option><option>VENTA</option><option>PRESTAMO</option></select></div>
+    <div class="section">
+      <div class="section-title">Cliente y Proyecto</div>
+      <div class="field"><label>ID Cliente <span class="req">*</span></label>
+        <input id="cliente" type="text" placeholder="Ingresa el ID del cliente">
+        <div id="cliente_nombre" style="font-size:11px; color:var(--primary); margin-top:5px; font-weight:600;"></div>
+      </div>
+      <div class="field"><label>Dirección de Proyecto / Obra <span class="req">*</span></label>
+        <input id="direccion_proyecto" placeholder="Dirección de la obra"></div>
+      <div class="field"><label>Medio de Contacto</label>
+        <select id="medio_contacto"><option value="">Seleccionar</option>
+          <option>Cliente antiguo</option><option>Instagram</option><option>Agente de ventas</option>
+          <option>Google</option><option>PV Torres</option><option>Referenciado</option>
+          <option>Facebook</option><option>Distribuidor directo</option>
+        </select></div>
     </div>
-    <div class="row row-2">
-      <div class="field"><label>Renta Anterior</label><input id="renta_anterior" type="number" placeholder="0"></div>
-      <div class="field"><label>Renta Posterior</label><input id="renta_posterior" type="number" placeholder="0"></div>
-    </div>
-    <div class="field"><label>Sistema</label><input id="sistema" placeholder="Ej: Torres de trabajo"></div>
-  </div>
 
-  <!-- Cliente -->
-  <div class="section">
-    <div class="section-title">Cliente</div>
-    <div class="field"><label>Cliente <span class="req">*</span></label>
-      <select id="cliente"><option value="">Cargando…</option></select></div>
-    <div class="field"><label>Dirección de Proyecto / Obra <span class="req">*</span></label>
-      <input id="direccion_proyecto" placeholder="Dirección de la obra"></div>
-    <div class="field"><label>Medio de Contacto</label>
-      <select id="medio_contacto"><option value="">Seleccionar</option><option>Llamada</option><option>WhatsApp</option><option>Correo</option><option>Referido</option><option>Redes Sociales</option></select></div>
-  </div>
-
-  <!-- Logística -->
-  <div class="section">
-    <div class="section-title">Logística y Fechas</div>
-    <div class="row row-2">
-      <div class="field"><label>Persona que recibe <span class="req">*</span></label><input id="persona_recibe"></div>
-      <div class="field"><label>Tel. quien recibe <span class="req">*</span></label><input id="tel_quien_recibe"></div>
-    </div>
-    <div class="row row-2">
-      <div class="field"><label>¿Requiere flete?</label>
-        <select id="requiere_flete"><option>Si</option><option>No</option></select></div>
-      <div class="field"><label>Flete a cargo de</label>
-        <select id="flete_a_cargo"><option>Cliente</option><option>ICAM</option></select></div>
-    </div>
-    <div class="row row-3">
+    <div class="section">
+      <div class="section-title">Logística y Fechas</div>
+      <div class="row row-2">
+        <div class="field"><label>Persona que recibe <span class="req">*</span></label><input id="persona_recibe"></div>
+        <div class="field"><label>Tel. quien recibe <span class="req">*</span></label><input id="tel_quien_recibe"></div>
+      </div>
+      <div class="row row-2">
+        <div class="field"><label>¿Requiere flete?</label>
+          <select id="requiere_flete"><option>Si</option><option>No</option></select></div>
+        <div class="field"><label>Flete a cargo de</label>
+          <select id="flete_a_cargo"><option>Cliente</option><option>ICAM</option></select></div>
+      </div>
       <div class="field"><label>Días renta <span class="req">*</span></label><input id="dias_renta" type="number" value="30"></div>
-      <div class="field"><label>Inicio renta <span class="req">*</span></label><input id="inicio_renta" type="date"></div>
-      <div class="field"><label>Fin renta</label><input id="fin_renta" type="date" disabled style="background:#f1f5f9"></div>
+      <div class="row row-2">
+        <div class="field"><label>Inicio renta <span class="req">*</span></label><input id="inicio_renta" type="date"></div>
+        <div class="field"><label>Fin renta</label><input id="fin_renta" type="date" disabled style="background:#f1f5f9; cursor:not-allowed;"></div>
+      </div>
     </div>
   </div>
 
-  <!-- Pago -->
-  <div class="section">
-    <div class="section-title">Pago</div>
-    <div class="row row-2">
-      <div class="field"><label>Forma de pago <span class="req">*</span></label>
-        <select id="forma_pago"><option value="">Seleccionar</option><option>Transferencia</option><option>Efectivo</option><option>Cheque</option><option>Tarjeta</option></select></div>
-      <div class="field"><label>Fecha de pago <span class="req">*</span></label><input id="fecha_pago" type="date"></div>
+  <!-- COLUMNA DERECHA -->
+  <div class="col">
+    <div class="section">
+      <div class="section-title">Pago</div>
+      <div class="row row-2">
+        <div class="field"><label>Forma de pago <span class="req">*</span></label>
+          <select id="forma_pago"><option value="">Seleccionar</option><option>Transferencia</option><option>Efectivo</option><option>Cheque</option><option>Tarjeta</option></select></div>
+        <div class="field"><label>Fecha de pago <span class="req">*</span></label><input id="fecha_pago" type="date"></div>
+      </div>
+      <div class="row row-2">
+        <div class="field"><label>Factura <span class="req">*</span></label><input id="factura" placeholder="Núm. factura"></div>
+        <div class="field"><label>Agente (vendedor) <span class="req">*</span></label>
+          <select id="agente">
+            <option value="">Seleccionar</option>
+            <option>1</option><option>2</option><option>3</option><option>4</option>
+            <option>5</option><option>6</option><option>7</option><option>8</option>
+          </select>
+        </div>
+      </div>
     </div>
-    <div class="row row-2">
-      <div class="field"><label>Factura <span class="req">*</span></label><input id="factura" placeholder="Núm. factura"></div>
-      <div class="field"><label>Agente (vendedor) <span class="req">*</span></label><input id="agente" type="number" placeholder="Ej: 1"></div>
+
+    <!-- Items -->
+    <div class="section" style="flex-grow:1; display:flex; flex-direction:column;">
+      <div class="items-header">
+        <div class="section-title" style="margin:0; border:none; padding:0;">📦 Productos</div>
+        <button class="btn-add" onclick="addItem()">+ Agregar Fila</button>
+      </div>
+      <div id="itemsList" style="margin-top:10px;"></div>
+    </div>
+
+    <!-- Costos Extra -->
+    <div class="section">
+      <div class="section-title">Costos Adicionales</div>
+      <div class="row row-2">
+        <div class="field"><label>Depósito</label><input id="deposito" type="number" value="0"></div>
+        <div class="field"><label>Subtotal extra</label><input id="subtotal_extra" type="number" value="0"></div>
+      </div>
+      <div class="row row-2">
+        <div class="field"><label>Entrega</label><input id="entrega" type="number" value="0"></div>
+        <div class="field"><label>Recolección</label><input id="recoleccion" type="number" value="0"></div>
+      </div>
+      <div class="row row-3">
+        <div class="field"><label>Armado</label><input id="armado" type="number" value="0"></div>
+        <div class="field"><label>Otros</label><input id="otros" type="number" value="0"></div>
+        <div class="field"><label>IVA</label>
+          <select id="iva_porcentaje"><option value="16%">16%</option><option value="0%">0%</option></select></div>
+      </div>
+      <div class="field"><label>Importe Pagaré <span class="req">*</span></label><input id="pagare" type="number" value="0" style="font-weight:bold; color:var(--primary); font-size:14px;"></div>
     </div>
   </div>
 
-  <!-- Items -->
-  <div class="items-section">
-    <div class="items-header">
-      <h3>📦 Productos</h3>
-      <button class="btn-add" onclick="addItem()">+ Agregar</button>
-    </div>
-    <div id="itemsList"></div>
-  </div>
-
-  <!-- Costos Extra -->
-  <div class="section">
-    <div class="section-title">Costos Adicionales</div>
-    <div class="row row-2">
-      <div class="field"><label>Depósito</label><input id="deposito" type="number" value="0"></div>
-      <div class="field"><label>Subtotal extra</label><input id="subtotal_extra" type="number" value="0"></div>
-    </div>
-    <div class="row row-2">
-      <div class="field"><label>Entrega</label><input id="entrega" type="number" value="0"></div>
-      <div class="field"><label>Recolección</label><input id="recoleccion" type="number" value="0"></div>
-    </div>
-    <div class="row row-3">
-      <div class="field"><label>Armado</label><input id="armado" type="number" value="0"></div>
-      <div class="field"><label>Otros</label><input id="otros" type="number" value="0"></div>
-      <div class="field"><label>IVA</label>
-        <select id="iva_porcentaje"><option value="16%">16%</option><option value="0%">0%</option></select></div>
-    </div>
-    <div class="field"><label>Importe Pagaré <span class="req">*</span></label><input id="pagare" type="number" value="0"></div>
-  </div>
 </div>
 
 <div class="footer">
-  <button class="btn-main" id="btnGuardar" onclick="guardar()">💾 Guardar Contrato</button>
+  <button class="btn-main" id="btnGuardar" onclick="guardar()">💾 Guardar y Emitir Contrato</button>
   <div id="status" class="status"></div>
 </div>
 
@@ -158,12 +205,7 @@ let productos = [];
     document.getElementById('folioNum').textContent = f;
   }).getNextFolio();
 
-  google.script.run.withSuccessHandler(list => {
-    clientes = list;
-    const sel = document.getElementById('cliente');
-    sel.innerHTML = '<option value="">— Selecciona cliente —</option>' +
-      list.map(c => '<option value="'+esc(c)+'">'+esc(c)+'</option>').join('');
-  }).getClientes();
+  // Se eliminó la carga de clientes para optimizar el rendimiento
 
   google.script.run.withSuccessHandler(list => {
     productos = list;
@@ -173,6 +215,27 @@ let productos = [];
   // Auto-calcular fin de renta
   document.getElementById('dias_renta').addEventListener('input', calcFin);
   document.getElementById('inicio_renta').addEventListener('input', calcFin);
+
+  // Buscar nombre del cliente al escribir el ID
+  document.getElementById('cliente').addEventListener('change', function() {
+    const id = this.value.trim();
+    const lbl = document.getElementById('cliente_nombre');
+    if (!id) { lbl.textContent = ''; return; }
+    
+    lbl.textContent = '⏳ Buscando...';
+    lbl.style.color = 'var(--muted)';
+    
+    google.script.run
+      .withSuccessHandler(nombre => {
+        lbl.textContent = nombre;
+        lbl.style.color = nombre.includes('⚠️') ? 'var(--danger)' : 'var(--primary)';
+      })
+      .withFailureHandler(() => {
+        lbl.textContent = '❌ Error al buscar';
+        lbl.style.color = 'var(--danger)';
+      })
+      .getNombreCliente(id);
+  });
 
   // Fecha de hoy por defecto
   const hoy = new Date().toISOString().split('T')[0];
@@ -195,13 +258,25 @@ function addItem() {
   const list = document.getElementById('itemsList');
   const div = document.createElement('div');
   div.className = 'item-row';
+  
+  // Generar HTML interno
+  const selectHtml = '<select class="item-prod" placeholder="Buscar producto..."><option value="">Producto...</option>' + 
+                     productos.map(p => '<option value="'+esc(p)+'">'+esc(p)+'</option>').join('') + 
+                     '</select>';
+
   div.innerHTML =
     '<input type="number" class="item-cant" placeholder="Cant" min="1" value="1">' +
-    '<select class="item-prod"><option value="">— Producto —</option>' +
-    productos.map(p => '<option value="'+esc(p)+'">'+esc(p)+'</option>').join('') +
-    '</select>' +
+    selectHtml +
     '<button class="btn-remove" onclick="this.parentElement.remove()">✕</button>';
+  
   list.appendChild(div);
+
+  // Inicializar TomSelect en el select recién agregado
+  const newSelect = div.querySelector('.item-prod');
+  new TomSelect(newSelect, {
+    create: false,
+    sortField: { field: "text", direction: "asc" }
+  });
 }
 
 function esc(s) { const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
@@ -235,7 +310,7 @@ function guardar() {
     if (cant && prod) items.push({ cantidad: Number(cant), producto: prod });
   });
   if (items.length === 0) {
-    st.textContent = '⚠️ Agrega al menos un producto';
+    st.textContent = '⚠️ Agrega al menos un producto válido';
     st.className = 'status err';
     return;
   }
@@ -274,18 +349,18 @@ function guardar() {
   };
 
   btn.disabled = true;
-  btn.textContent = '⏳ Guardando…';
-  st.textContent = 'Escribiendo en plantilla, enviando a Supabase, generando PDF…';
+  btn.textContent = '⏳ Guardando... no cierres esta ventana';
+  st.textContent = 'Procesando plantilla, enviando a Supabase y generando PDF...';
   st.className = 'status ok';
 
   google.script.run
     .withSuccessHandler(result => {
       btn.disabled = false;
-      btn.textContent = '💾 Guardar Contrato';
+      btn.textContent = '💾 Guardar y Emitir Contrato';
       if (result.ok) {
-        st.textContent = '✅ Contrato ' + result.folio + ' guardado. ' +
-          'Supabase: ' + (result.supabase ? '✓' : '✗') +
-          (result.pdfUrl ? ' | PDF generado' : '');
+        st.innerHTML = '✅ <b>Contrato ' + result.folio + ' guardado exitosamente.</b><br>' +
+          'BD (Supabase): ' + (result.supabase ? 'Guardado ✓' : 'Error ✗') +
+          (result.pdfUrl ? '<br><a href="'+result.pdfUrl+'" target="_blank" style="color:#065f46">Ver PDF generado</a>' : '');
         st.className = 'status ok';
         document.getElementById('folioNum').textContent = result.nuevoFolio;
         resetForm();
@@ -296,19 +371,20 @@ function guardar() {
     })
     .withFailureHandler(err => {
       btn.disabled = false;
-      btn.textContent = '💾 Guardar Contrato';
-      st.textContent = '❌ Error: ' + err.message;
+      btn.textContent = '💾 Guardar y Emitir Contrato';
+      st.textContent = '❌ Error de conexión: ' + err.message;
       st.className = 'status err';
     })
     .guardarContrato(data);
 }
 
 function resetForm() {
-  ['renta_anterior','renta_posterior','sistema','direccion_proyecto',
-   'persona_recibe','tel_quien_recibe','factura'].forEach(id => {
+  ['cliente','renta_anterior','renta_posterior','sistema','direccion_proyecto',
+   'persona_recibe','tel_quien_recibe','factura','agente'].forEach(id => {
     document.getElementById(id).value = '';
   });
-  document.getElementById('cliente').selectedIndex = 0;
+  document.getElementById('cliente_nombre').textContent = '';
+  
   document.getElementById('deposito').value = 0;
   document.getElementById('subtotal_extra').value = 0;
   document.getElementById('entrega').value = 0;
@@ -316,6 +392,7 @@ function resetForm() {
   document.getElementById('armado').value = 0;
   document.getElementById('otros').value = 0;
   document.getElementById('pagare').value = 0;
+  
   document.getElementById('itemsList').innerHTML = '';
   addItem();
 }

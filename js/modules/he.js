@@ -171,7 +171,7 @@ export const ModHE = (() => {
             return `<tr>
                 <td class="td-mono">${it.sku}</td><td>${Utils.escapeHtml(it.descripcion||'—')}</td>
                 <td class="td-mono" style="font-weight:700;color:${enCampo>0?'var(--primary)':'var(--text-muted)'}">${enCampo}</td>
-                <td><input type="number" class="form-control he-cant" data-sku="${it.sku}" data-desc="${it.descripcion||''}" min="0" max="${enCampo}" value="${enCampo}" style="width:80px;font-size:0.78rem" ${enCampo===0?'disabled':''}></td>
+                <td><input type="number" class="form-control he-cant" data-sku="${it.sku}" data-desc="${it.descripcion||''}" data-peso="${it.peso_unitario||0}" min="0" max="${enCampo}" value="${enCampo}" style="width:80px;font-size:0.78rem" ${enCampo===0?'disabled':''}></td>
                 <td><select class="form-control he-estado" style="font-size:0.78rem" ${enCampo===0?'disabled':''}>
                     <option value="pendiente_clasificacion">⏳ Pend. Clasif.</option>
                     <option value="limpio_funcional">✅ Limpio</option>
@@ -188,10 +188,16 @@ export const ModHE = (() => {
         const contrato = ModContratos.getContratos().find(c => c.numero_contrato === numContrato);
 
         const itemsToSave = [];
+        let pesoTotalHE = 0;
         document.querySelectorAll('.he-cant').forEach((inp, i) => {
             const val = parseInt(inp.value) || 0;
             const sel = document.querySelectorAll('.he-estado')[i];
-            if (val > 0) itemsToSave.push({ sku: inp.dataset.sku, descripcion: inp.dataset.desc, cantidad_recolectada: val, estado: sel?.value || 'pendiente_clasificacion' });
+            if (val > 0) {
+                const pesoU = parseFloat(inp.dataset.peso) || 0;
+                const pesoT = pesoU * val;
+                pesoTotalHE += pesoT;
+                itemsToSave.push({ sku: inp.dataset.sku, descripcion: inp.dataset.desc, cantidad_recolectada: val, estado: sel?.value || 'pendiente_clasificacion', peso_unitario: pesoU, peso_total: pesoT });
+            }
         });
         if (!itemsToSave.length) { App.toast('No hay piezas para recolectar', 'warning'); return; }
 
@@ -202,6 +208,7 @@ export const ModHE = (() => {
             obra: contrato?.obra || '',
             fecha: document.getElementById('he-fecha').value,
             total_piezas: itemsToSave.reduce((s, i) => s + i.cantidad_recolectada, 0),
+            peso_total: pesoTotalHE,
             estatus: 'recibido',
             operador: document.getElementById('he-operador').value.trim() || null,
             notas: document.getElementById('he-notas').value.trim() || null,
@@ -210,7 +217,7 @@ export const ModHE = (() => {
         if (res.error) { App.toast('Error: ' + res.error, 'danger'); return; }
 
         for (const it of itemsToSave) {
-            await DB.insert('he_items', { he_id: res.id, sku: it.sku, descripcion: it.descripcion, cantidad_recolectada: it.cantidad_recolectada, estado: it.estado });
+            await DB.insert('he_items', { he_id: res.id, sku: it.sku, descripcion: it.descripcion, cantidad_recolectada: it.cantidad_recolectada, estado: it.estado, peso_unitario: it.peso_unitario, peso_total: it.peso_total });
         }
 
         document.getElementById('modal-he').remove();
@@ -232,6 +239,7 @@ export const ModHE = (() => {
                     <div><span class="stat-label">Fecha</span><div>${Utils.fmtFecha(h.fecha)}</div></div>
                     <div><span class="stat-label">Obra</span><div>${Utils.escapeHtml(h.obra||'—')}</div></div>
                     <div><span class="stat-label">Piezas</span><div class="td-mono">${h.total_piezas}</div></div>
+                    <div><span class="stat-label">Peso Total</span><div class="td-mono">${(h.peso_total||0).toLocaleString()} kg</div></div>
                 </div>
                 <table class="items-table-mini"><thead><tr><th>SKU</th><th>Descripción</th><th>Recolectado</th><th>Estado</th></tr></thead>
                 <tbody>${(h.items||[]).map(i => `<tr><td class="td-mono">${i.sku}</td><td>${Utils.escapeHtml(i.descripcion||'—')}</td><td class="td-mono">${i.cantidad_recolectada}</td><td><span class="badge badge-gray">${(i.estado||'—').replace(/_/g,' ')}</span></td></tr>`).join('')}</tbody></table>

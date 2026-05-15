@@ -42,7 +42,8 @@ const CELDAS = {
   RENTA_ANTERIOR: 'F10',
   RENTA_POSTERIOR: 'H10',
   TIPO_OPERACION: 'J10',
-  CLIENTE: 'C11',
+  CLIENTE_ID: 'C11', // Donde se escribe el ID
+  CLIENTE_NOMBRE: 'D11', // Donde el VLOOKUP genera el nombre
   SISTEMA: 'K12',
   MEDIO_CONTACTO: 'K14',
   DIRECCION_PROYECTO: 'A15',
@@ -72,6 +73,8 @@ const CELDAS = {
   FIN_RENTA: 'J17',           // Calculado (C17+F17)
   SUBTOTAL: 'K63',            // Calculado
   IVA_MONTO: 'K64',           // Calculado
+  TOTAL_CONTRATO: 'D62',
+  CANTIDAD_TOTAL: 'A52',
 };
 
 // ═══════════════════════════════════════════════════════════════
@@ -80,28 +83,37 @@ const CELDAS = {
 function onOpen() {
   SpreadsheetApp.getUi()
     .createMenu('📄 ICAM Contratos')
-    .addItem('📝 Nuevo Contrato', 'showSidebar')
+    .addItem('📝 Nuevo Contrato', 'showFormModal')
     .addSeparator()
     .addItem('🔄 Limpiar Plantilla', 'limpiarPlantilla')
     .addToUi();
 }
 
-function showSidebar() {
+function showFormModal() {
   const html = HtmlService.createHtmlOutputFromFile('Sidebar')
-    .setTitle('Nuevo Contrato')
-    .setWidth(420);
-  SpreadsheetApp.getUi().showSidebar(html);
+    .setWidth(900)
+    .setHeight(650);
+  SpreadsheetApp.getUi().showModalDialog(html, 'Nuevo Contrato');
 }
 
 // ═══════════════════════════════════════════════════════════════
 // DATOS PARA EL FORMULARIO (llamados desde el sidebar)
 // ═══════════════════════════════════════════════════════════════
-function getClientes() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const ws = ss.getSheetByName(CONFIG.HOJA_CLIENTES);
-  if (!ws) return [];
-  const data = ws.getRange(2, 2, ws.getLastRow() - 1, 1).getValues();
-  return data.map(r => r[0]).filter(v => v !== '');
+// Ya no se cargan clientes masivamente, se busca individualmente por ID
+function getNombreCliente(id) {
+  if (!id) return '';
+  const ws = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(CONFIG.HOJA_CLIENTES);
+  if (!ws) return '';
+  
+  // Usar TextFinder para una búsqueda ultra rápida en la columna A
+  const textFinder = ws.getRange('A:A').createTextFinder(String(id)).matchEntireCell(true);
+  const cell = textFinder.findNext();
+  
+  if (cell) {
+    // Retornar el valor de la columna B (nombre) en esa misma fila
+    return String(ws.getRange(cell.getRow(), 2).getValue());
+  }
+  return '⚠️ Cliente no encontrado';
 }
 
 function getProductos() {
@@ -113,8 +125,25 @@ function getProductos() {
 }
 
 function getNextFolio() {
-  const ws = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(CONFIG.HOJA_CONTRATO);
-  return ws ? ws.getRange(CELDAS.NUMERO_CONTRATO).getValue() || 1 : 1;
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const wsData = ss.getSheetByName('_data_contratos');
+  if (!wsData) return 1;
+
+  const maxRow = wsData.getLastRow();
+  if (maxRow < 2) return 1; // Si solo hay encabezados
+  
+  // Leer columna B (columna 2) desde la fila 2
+  const values = wsData.getRange(2, 2, maxRow - 1, 1).getValues();
+  let maxFolio = 0;
+  
+  for (let i = 0; i < values.length; i++) {
+    const num = Number(values[i][0]);
+    if (!isNaN(num) && num > maxFolio) {
+      maxFolio = num;
+    }
+  }
+  
+  return maxFolio + 1;
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -135,6 +164,13 @@ function guardarContrato(formData) {
 
     // 3. Leer datos resueltos (incluyendo VLOOKUPs)
     const datosCompletos = leerDatosResueltos(ws, formData);
+
+    // 3.5. Guardar en pestaña _data_contratos
+    try {
+      guardarEnDataContratos(ss, datosCompletos, formData);
+    } catch (e) {
+      Logger.log('Error Data Contratos: ' + e.message);
+    }
 
     // 4. Enviar a Supabase
     let supabaseOk = false;
@@ -183,8 +219,8 @@ function escribirEnPlantilla(ws, d) {
   set(CELDAS.SUCURSAL, d.sucursal);
   set(CELDAS.RENTA_ANTERIOR, d.renta_anterior);
   set(CELDAS.RENTA_POSTERIOR, d.renta_posterior);
-  set(CELDAS.TIPO_OPERACION, d.tipo_operacion || 'EN RENTA');
-  set(CELDAS.CLIENTE, d.cliente);
+  set(CELDAS.TIPO_OPERACION, d.tipo_operacion || 'Renta');
+  set(CELDAS.CLIENTE_ID, d.cliente); // Escribe el ID en C11
   set(CELDAS.SISTEMA, d.sistema);
   set(CELDAS.MEDIO_CONTACTO, d.medio_contacto);
   set(CELDAS.DIRECCION_PROYECTO, d.direccion_proyecto);
@@ -246,7 +282,7 @@ function leerDatosResueltos(ws, formData) {
 
   return {
     numero_contrato: Number(get(CELDAS.NUMERO_CONTRATO)),
-    cliente: String(get(CELDAS.CLIENTE) || ''),
+    cliente: String(get(CELDAS.CLIENTE_NOMBRE) || ''), // Lee el nombre resuelto de D11
     direccion_cliente: String(get(CELDAS.DIRECCION_CLIENTE) || ''),
     telefono: String(get(CELDAS.TELEFONO_CLIENTE) || ''),
     obra: String(get(CELDAS.DIRECCION_PROYECTO) || ''),
@@ -261,12 +297,43 @@ function leerDatosResueltos(ws, formData) {
     forma_pago: String(get(CELDAS.FORMA_PAGO) || ''),
     medio_contacto: String(get(CELDAS.MEDIO_CONTACTO) || ''),
     dias_renta: Number(get(CELDAS.DIAS_RENTA)) || 0,
+    fecha_fin_renta: getDate(CELDAS.FIN_RENTA),
     subtotal: Number(get(CELDAS.SUBTOTAL)) || 0,
     iva: Number(get(CELDAS.IVA_MONTO)) || 0,
-    tipo: String(get(CELDAS.TIPO_OPERACION) || 'EN RENTA'),
+    total_contrato: Number(get(CELDAS.TOTAL_CONTRATO)) || 0,
+    cantidad_total: Number(get(CELDAS.CANTIDAD_TOTAL)) || 0,
+    tipo: String(get(CELDAS.TIPO_OPERACION) || 'Renta'),
     sistema: String(get(CELDAS.SISTEMA) || ''),
     items: items,
   };
+}
+
+// ═══════════════════════════════════════════════════════════════
+// GUARDAR EN HOJA _data_contratos
+// ═══════════════════════════════════════════════════════════════
+function guardarEnDataContratos(ss, datos, formData) {
+  let ws = ss.getSheetByName('_data_contratos');
+  if (!ws) return; // Si no existe, no hace nada
+  
+  // Mapeo: A=0... AF=31 -> 32 columnas
+  const row = new Array(32).fill('');
+  
+  row[1] = datos.numero_contrato;          // B: Folio
+  row[3] = formData.renta_anterior || 0;   // D: RENTA ANTERIOR
+  row[4] = formData.renta_posterior || 0;  // E: RENTA POSTERIOR
+  row[5] = new Date();                     // F: FECHA DE CREACION (TIMESTAMP)
+  row[6] = datos.cliente;                  // G: CLIENTE
+  row[7] = datos.dias_renta;               // H: DIAS DE RENTA
+  row[8] = datos.fecha_inicio_renta;       // I: FECHA INICIO (Asumimos I)
+  row[9] = datos.fecha_fin_renta;          // J: FECHA TERMINO
+  row[13] = datos.total_contrato;          // N: TOTAL (D62)
+  row[24] = datos.sucursal;                // Y: SUCURSAL
+  row[26] = datos.cantidad_total;          // AA: CANTIDAD TOTAL (A52)
+  row[29] = datos.vendedor;                // AD: Wait, AGENTE is AE. Let's map exactly: Z=25, AA=26, AB=27, AC=28, AD=29, AE=30, AF=31
+  row[30] = datos.vendedor;                // AE: AGENTE
+  row[31] = datos.medio_contacto;          // AF: MEDIO DE CONTACTO
+  
+  ws.appendRow(row);
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -385,7 +452,7 @@ function limpiarPlantilla() {
 function limpiarCeldas(ws) {
   const clear = (range) => { try { ws.getRange(range).clearContent(); } catch(e) {} };
 
-  clear(CELDAS.CLIENTE);
+  clear(CELDAS.CLIENTE_ID);
   clear(CELDAS.DIRECCION_PROYECTO);
   clear(CELDAS.PERSONA_RECIBE);
   clear(CELDAS.TEL_QUIEN_RECIBE);

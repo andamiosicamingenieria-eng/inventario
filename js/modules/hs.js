@@ -171,7 +171,7 @@ export const ModHS = (() => {
                 <td class="td-mono">${it.cantidad}</td><td class="td-mono">${yaEnt}</td>
                 <td class="td-mono" style="font-weight:700;color:${pend>0?'var(--warning)':'var(--success)'}">${pend}</td>
                 <td class="td-mono"><span class="badge ${stock<pend?'badge-danger':'badge-success'}">${stock}</span></td>
-                <td><input type="number" class="form-control hs-cant" data-idx="${i}" data-sku="${it.sku}" data-desc="${it.descripcion||''}" data-max="${pend}" data-stock="${stock}" value="${sugerido}" min="0" max="${Math.min(pend,stock)}" style="width:80px;font-size:0.78rem" ${pend===0?'disabled':''}></td>
+                <td><input type="number" class="form-control hs-cant" data-idx="${i}" data-sku="${it.sku}" data-desc="${it.descripcion||''}" data-peso="${it.peso_unitario||0}" data-max="${pend}" data-stock="${stock}" value="${sugerido}" min="0" max="${Math.min(pend,stock)}" style="width:80px;font-size:0.78rem" ${pend===0?'disabled':''}></td>
             </tr>`;
         }).join('');
     }
@@ -182,11 +182,15 @@ export const ModHS = (() => {
 
         const contrato = ModContratos.getContratos().find(c => c.numero_contrato === numContrato);
         const itemsToSave = [];
+        let pesoTotalHS = 0;
         document.querySelectorAll('.hs-cant').forEach(inp => {
             const val = parseInt(inp.value) || 0;
             if (val > 0) {
                 if (val > parseInt(inp.dataset.stock)) { App.toast('Cantidad supera stock en ' + inp.dataset.sku, 'danger'); return; }
-                itemsToSave.push({ sku: inp.dataset.sku, descripcion: inp.dataset.desc, cantidad: val });
+                const pesoU = parseFloat(inp.dataset.peso) || 0;
+                const pesoT = pesoU * val;
+                pesoTotalHS += pesoT;
+                itemsToSave.push({ sku: inp.dataset.sku, descripcion: inp.dataset.desc, cantidad: val, peso_unitario: pesoU, peso_total: pesoT });
             }
         });
         if (!itemsToSave.length) { App.toast('No hay piezas para entregar', 'warning'); return; }
@@ -198,6 +202,7 @@ export const ModHS = (() => {
             obra: contrato?.obra || '',
             fecha: document.getElementById('hs-fecha').value,
             total_piezas: itemsToSave.reduce((s, i) => s + i.cantidad, 0),
+            peso_total: pesoTotalHS,
             estatus: 'entregado',
             notas: document.getElementById('hs-notas').value.trim() || null,
         };
@@ -206,7 +211,7 @@ export const ModHS = (() => {
 
         // Insertar items (triggers en BD actualizan inventario)
         for (const it of itemsToSave) {
-            await DB.insert('hs_items', { hs_id: res.id, sku: it.sku, descripcion: it.descripcion, cantidad: it.cantidad });
+            await DB.insert('hs_items', { hs_id: res.id, sku: it.sku, descripcion: it.descripcion, cantidad: it.cantidad, peso_unitario: it.peso_unitario, peso_total: it.peso_total });
         }
 
         document.getElementById('modal-hs').remove();
@@ -228,6 +233,7 @@ export const ModHS = (() => {
                     <div><span class="stat-label">Fecha</span><div>${Utils.fmtFecha(h.fecha)}</div></div>
                     <div><span class="stat-label">Obra</span><div>${Utils.escapeHtml(h.obra||'—')}</div></div>
                     <div><span class="stat-label">Piezas</span><div class="td-mono">${h.total_piezas}</div></div>
+                    <div><span class="stat-label">Peso Total</span><div class="td-mono">${(h.peso_total||0).toLocaleString()} kg</div></div>
                 </div>
                 <table class="items-table-mini"><thead><tr><th>SKU</th><th>Descripción</th><th>Cantidad</th></tr></thead>
                 <tbody>${(h.items||[]).map(i => `<tr><td class="td-mono">${i.sku}</td><td>${Utils.escapeHtml(i.descripcion||'—')}</td><td class="td-mono">${i.cantidad}</td></tr>`).join('')}</tbody></table>
