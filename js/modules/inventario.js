@@ -8,6 +8,7 @@ import { Utils } from '../utils.js';
 
 export const ModInventario = (() => {
     let inventario = [];
+    let catProductos = [];
     let filtro = '';
 
     async function render() {
@@ -60,7 +61,16 @@ export const ModInventario = (() => {
     }
 
     async function cargar() {
+        // Cargar inventario actual
         inventario = (await DB.getAll('inventario', { orderBy: 'sku' })) || [];
+        
+        // Intentar cargar el catálogo de productos (ignora error si la tabla aún no existe)
+        try {
+            catProductos = (await DB.getAll('cat_productos', { orderBy: 'sku' })) || [];
+        } catch(e) {
+            catProductos = [];
+        }
+
         renderKPIs();
         renderTabla();
     }
@@ -117,7 +127,7 @@ export const ModInventario = (() => {
                     <input id="aj-sku-search" class="form-control" placeholder="Buscar SKU…" autocomplete="off">
                     <select id="aj-sku" class="form-control" style="margin-top:0.5rem">
                         <option value="">— Selecciona SKU —</option>
-                        ${inventario.map(i => `<option value="${i.sku}">${i.sku} — ${i.descripcion||'Sin desc.'}</option>`).join('')}
+                        ${(catProductos.length > 0 ? catProductos : inventario).map(i => `<option value="${i.sku}">${i.sku} — ${i.descripcion||'Sin desc.'}</option>`).join('')}
                     </select>
                     <div class="alert alert-info mt-2"><span>Si el SKU no existe aún, escríbelo directamente en el campo de búsqueda.</span></div>
                 </div>
@@ -148,12 +158,14 @@ export const ModInventario = (() => {
         document.getElementById('aj-sku-search').addEventListener('input', e => {
             const txt = e.target.value.toLowerCase();
             const sel = document.getElementById('aj-sku');
-            const filtered = inventario.filter(i => (i.sku||'').toLowerCase().includes(txt) || (i.descripcion||'').toLowerCase().includes(txt));
+            const source = catProductos.length > 0 ? catProductos : inventario;
+            const filtered = source.filter(i => (i.sku||'').toLowerCase().includes(txt) || (i.descripcion||'').toLowerCase().includes(txt));
             sel.innerHTML = `<option value="">— Selecciona —</option>${filtered.map(i => `<option value="${i.sku}">${i.sku} — ${i.descripcion||''}</option>`).join('')}`;
             if (filtered.length === 1) { sel.value = filtered[0].sku; document.getElementById('aj-desc').value = filtered[0].descripcion || ''; }
         });
         document.getElementById('aj-sku').addEventListener('change', e => {
-            const item = inventario.find(i => i.sku === e.target.value);
+            const source = catProductos.length > 0 ? catProductos : inventario;
+            const item = source.find(i => i.sku === e.target.value);
             if (item) document.getElementById('aj-desc').value = item.descripcion || '';
         });
         document.getElementById('btn-apply-aj').addEventListener('click', aplicarAjuste);
